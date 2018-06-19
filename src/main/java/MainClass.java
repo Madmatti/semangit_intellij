@@ -1,5 +1,6 @@
 import com.opencsv.CSVReader;
 
+import org.apache.jena.base.Sys;
 import org.rdfhdt.hdt.enums.RDFNotation;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
@@ -12,6 +13,7 @@ import java.io.*;
 
 public class MainClass {
 
+    private static final String PREFIX_Semangit = "<http://www.dennis_stinkt_krass.pizza/>";
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     public static void parseUsers(String path)
@@ -21,10 +23,9 @@ public class MainClass {
             CSVReader reader = new CSVReader(new FileReader(path + "users.csv"));
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/users.ttl"), 32768);
             String[] nextLine;
-            writer.write("@prefix semangit: <http://www.dennis_stinkt_krass.pizza#> .");
+            writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
             writer.newLine();
             writer.newLine();
-            String quot = (Character.toString('"'));
             while((nextLine = reader.readNext())!= null)
             {
                 for (int i = 0; i < nextLine.length; i++) {
@@ -114,6 +115,7 @@ public class MainClass {
         {
             HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, RDFNotation.parse(inputType), new HDTSpecification(), null);
             hdt.saveToHDT(hdtOutput, null);
+            hdt.close();
         }
         catch (Exception e)
         {
@@ -121,14 +123,65 @@ public class MainClass {
             System.exit(1);
         }
     }
+
+    public static void parseOrganizationMembers(String path)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "organization_members.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/organization_members.ttl"), 32768);
+            String[] nextLine;
+            writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+            writer.newLine();
+            writer.newLine();
+            while((nextLine = reader.readNext())!= null) {
+                writer.write("[ a " + TAG_Semangit + "github_organization_join_event;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_organization_joined_at \"" + nextLine[2] + "\" ] " + TAG_Semangit + "github_organization_joined_by " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_organization_is_joined " + TAG_Semangit  + TAG_Userprefix + nextLine[0] + ".");
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    public static void rdf2hdtOrganizationMembers(String path)
+    {
+        String baseURI = "http://example.com/mydataset";
+        String rdfInput = path.concat("rdf/organization_members.ttl");
+        String inputType = "turtle";
+
+        String hdtOutput = path.concat("hdt/organization_members.hdt");
+        try
+        {
+            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, RDFNotation.parse(inputType), new HDTSpecification(), null);
+            hdt.saveToHDT(hdtOutput, null);
+            hdt.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+
+
     public static void main(String[] args)
     {
         new File(args[0] + "rdf").mkdirs();
         new File(args[0] + "hdt").mkdirs();
         parseUsers(args[0]);
+        parseOrganizationMembers(args[0]);
 
         rdf2hdtUsers(args[0]);
-
+        rdf2hdtOrganizationMembers(args[0]);
 
         System.exit(0);
     }
