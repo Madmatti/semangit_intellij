@@ -260,6 +260,62 @@ public class MainClass {
 
 
 
+    private static void parseProjectCommits(String path, boolean includePrefix)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "project_commits.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_commits.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            String[] curLine = reader.readNext();
+            boolean abbreviated = false;
+            while((nextLine = reader.readNext())!= null) { //TODO: sticking to ontology for now. Check if reversing the relation would save space!
+                if(abbreviated) //abbreviated in previous step. Only need to print object now
+                {
+                    writer.write(TAG_Semangit + TAG_Repoprefix + curLine[0]); //one commit for multiple repositories (branching / merging)
+                }
+                else //no abbreviation occurred. Full subject predicate object triple printed
+                {
+                    writer.write(TAG_Semangit + TAG_Commit + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0]);
+                }
+
+                abbreviated = (curLine[1].equals(nextLine[1]));
+                curLine = nextLine;
+                if(abbreviated)
+                {
+                    writer.write(",");
+                }
+                else {
+                    writer.write(".");
+                }
+                writer.newLine();
+            }
+
+            //handle last line
+            if(abbreviated) //abbreviated in previous step. Only need to print object now
+            {
+                writer.write(TAG_Semangit + TAG_Repoprefix + curLine[0] + "."); //one commit for multiple repositories (branching / merging)
+            }
+            else //no abbreviation occurred. Full subject predicate object triple printed
+            {
+                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0] + ".");
+            }
+
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+
     private static void parseUsers(String path, boolean includePrefix)
     {
         try
@@ -489,7 +545,6 @@ public class MainClass {
     /**
      * Files still to be converted:
      *     issue_labels
-     *     project_commits
      *     project_members
      *     projects
      *     pull_request_commits
@@ -613,6 +668,10 @@ public class MainClass {
 
         parseIssues(args[0], false);
         System.out.println("Issues parsed");
+
+        parseProjectCommits(args[0], false);
+        System.out.println("ProjectCommits parsed");
+
         try {
             /*String correctPath = args[0].concat("rdf/");
             System.out.println("Appending Org Members");
