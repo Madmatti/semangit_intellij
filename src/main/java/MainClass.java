@@ -1,5 +1,4 @@
 import com.opencsv.CSVReader;
-import org.apache.jena.base.Sys;
 
 
 /*
@@ -21,7 +20,10 @@ public class MainClass {
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
-    private static final String TAG_commit = "ghcom_";
+    private static final String TAG_Commit = "ghcom_";
+    private static final String TAG_Comment = "ghcomment_";
+    private static final String TAG_Issue = "ghissue_";
+    private static final String TAG_Pullrequest = "ghpr_";
 
 
     public static void parseFollowers(String path, boolean includePrefix)
@@ -193,11 +195,11 @@ public class MainClass {
             while ((nextLine = reader.readNext()) != null) {
                 if(!abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_commit + curLine[1]);
+                    writer.write(TAG_Semangit + TAG_Commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commit + curLine[1]);
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_commit + curLine[1]); //only specifying next object. subject/predicate are abbreviated
+                    writer.write(TAG_Semangit + TAG_Commit + curLine[1]); //only specifying next object. subject/predicate are abbreviated
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -215,11 +217,11 @@ public class MainClass {
             //handle last line of file
             if(!abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_commit + curLine[1]);
+                writer.write(TAG_Semangit + TAG_Commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commit + curLine[1] + ".");
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_commit + curLine[1]); //only specifying next object. subject/predicate are abbreviated
+                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
             }
         }
         catch (Exception e)
@@ -243,7 +245,7 @@ public class MainClass {
                 /*for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }*/
-                String commitURI = TAG_Semangit + TAG_commit + nextLine[0];
+                String commitURI = TAG_Semangit + TAG_Commit + nextLine[0];
                 writer.write(  commitURI + " a " + TAG_Semangit + "github_commit;");
                 writer.newLine();
                 writer.write(TAG_Semangit + "commit_sha \"" + nextLine[1] + "\";");
@@ -266,16 +268,141 @@ public class MainClass {
     }
 
     /**
+     * Comment section. Below are all functions related to comments.
+     * commit_comments
+     * issue_comments
+     * pull_request_comments
+     */
+
+    public static void parseCommitComments(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "commit_comments.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }
+                writer.write(TAG_Semangit + TAG_Comment + "commit_" + nextLine[0] + " a " + TAG_Semangit + "comment;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Commit + nextLine[1] + ";"); //comment for a commit
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.newLine();
+                if(!nextLine[3].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "comment_body \"" + nextLine[3] + "\";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[4].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "comment_line " + nextLine[4] + ";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[5].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "comment_pos " + nextLine[5] + ";");
+                    writer.newLine();
+                }
+
+
+                writer.write(TAG_Semangit + "comment_created_at \"" + nextLine[7] + "\".");
+                writer.newLine();
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+    public static void parseIssueComments(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "issue_comments.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issue_comments.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                /*for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }*/
+
+                //TODO: Let's verify the integrity of the RDF output of this
+                writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[3] + "\";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Issue + nextLine[0] + ";"); //comment for an issue
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
+                writer.newLine();
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+
+    public static void parsePullRequestComments(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "pull_request_comments.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }
+
+                //TODO: Let's verify the integrity of the RDF output of this
+                writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[6] + "\";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Pullrequest + nextLine[0] + ";"); //comment for a pull request
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_pos " + nextLine[3] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "comment_body \"" + nextLine[4] + "\";");
+                writer.newLine();
+                //TODO: commit_id?!
+
+                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
+                writer.newLine();
+                //comment for [0]
+            }
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+    /**
      * Files still to be converted:
-     *     commit_comments
-     *     issue_comments
      *     issue_events
      *     issue_labels
      *     issues
      *     project_commits
      *     project_members
      *     projects
-     *     pull_request_comments
      *     pull_request_commits
      *     pull_request_history
      *     pull_requests
@@ -355,6 +482,15 @@ public class MainClass {
 
         parseCommitParents(args[0], false);
         System.out.println("CommitParents parsed.");
+
+        parseCommitComments(args[0], false);
+        System.out.println("CommitComments parsed.");
+
+        parseIssueComments(args[0], false);
+        System.out.println("IssueComments parsed.");
+
+        parsePullRequestComments(args[0], false);
+        System.out.println("PullRequestComments parsed.");
         try {
             /*String correctPath = args[0].concat("rdf/");
             System.out.println("Appending Org Members");
