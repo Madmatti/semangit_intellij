@@ -466,6 +466,39 @@ public class MainClass {
         }
     }
 
+
+    private static void parsePullRequestHistory(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "pull_request_history.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_history.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                writer.write("[ a " + TAG_Semangit + "github_pull_request_action ;");
+                writer.newLine();
+                //id, PR id, created at, action, actor
+                writer.write(TAG_Semangit + "github_pull_request_action_created_at \"" + nextLine[2] + "\";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_pull_request_action \"" + nextLine[3] + "\" ] "); //TODO: does NOT match ontology!!! This is badly designed!
+                if(!nextLine[4].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "github_pull_request_actor " + TAG_Semangit + TAG_Userprefix + nextLine[4] + ";"); //TODO: does NOT match ontology!!! This is MISSING!
+                    writer.newLine();
+                }
+                writer.write(TAG_Semangit + "github_pull_request_action_pull_request " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[1] + ".");
+                writer.newLine();
+            }
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
     private static void parseUsers(String path, boolean includePrefix)
     {
         try
@@ -698,7 +731,6 @@ public class MainClass {
     /**
      * Files still to be converted:
      *     issue_labels
-     *     pull_request_history
      *     pull_requests
      *     repo_labels
      *     repo_milestones
@@ -830,6 +862,9 @@ public class MainClass {
 
         parsePullRequestCommits(args[0], false);
         System.out.println("PullRequestCommits parsed.");
+
+        parsePullRequestHistory(args[0], false);
+        System.out.println("PullRequestHistory parsed.");
 
         try {
             /*String correctPath = args[0].concat("rdf/");
