@@ -71,6 +71,7 @@ public class MainClass {
             {
                 writer.write(TAG_Semangit + TAG_Commit + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -107,6 +108,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "commit_created_at \"" + nextLine[5] + "\".");
                 writer.newLine();
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -173,6 +175,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "github_issue_event_for " + TAG_Semangit + TAG_Issue + nextLine[1] + ".");
                 writer.newLine();
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -223,6 +226,7 @@ public class MainClass {
                 curLine = nextLine;
 
             }
+            writer.close();
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -315,6 +319,152 @@ public class MainClass {
     }
 
 
+
+
+    private static void parseProjectMembers(String path, boolean includePrefix)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "project_members.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_members.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while((nextLine = reader.readNext())!= null) {
+                writer.write("[ a " + TAG_Semangit + "github_project_join_event;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_project_join_event_created_at \"" + nextLine[2] + "\" ] ");
+                writer.write(TAG_Semangit + "github_project_joining_user " + TAG_Semangit + TAG_Userprefix + nextLine[1] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_project_joined " + TAG_Semangit + TAG_Repoprefix + nextLine[0] + ".");
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+
+
+    private static void parseProjects(String path, boolean includePrefix)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "projects.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/projects.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while((nextLine = reader.readNext())!= null) {
+                for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }
+                writer.write(TAG_Semangit + TAG_Repoprefix + nextLine[0] + " a " + TAG_Semangit + "github_project ;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "repository_url \"" + nextLine[1] + "\";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_has_owner " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_project_name \"" + nextLine[3] + "\";");
+                writer.newLine();
+                if(!nextLine[4].equals("")) {
+
+                    writer.write(TAG_Semangit + "github_project_description \"" + nextLine[4] + "\";");
+                    writer.newLine();
+                }
+                if(!nextLine[5].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "repository_language \"" + nextLine[5] + "\";"); //TODO! Programming language is not a string!
+                    writer.newLine();
+                }
+                if(!nextLine[7].equals("N"))
+                {
+                    writer.write(TAG_Semangit + "github_forked_from " + TAG_Semangit + TAG_Repoprefix + nextLine[7] + ";");
+                    writer.newLine();
+                }
+                if(nextLine[8].equals("1")) //TODO: test
+                {
+                    writer.write(TAG_Semangit + "github_project_deleted 1;");
+                    writer.newLine();
+                }
+                else
+                {
+                    writer.write(TAG_Semangit + "github_project_deleted 0;");
+                    writer.newLine();
+                }
+                writer.write(TAG_Semangit + "repository_created_at \"" + nextLine[6] + "\".");
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+    private static void parsePullRequestCommits(String path, boolean includePrefix)
+    {
+        try
+        {
+            CSVReader reader = new CSVReader(new FileReader(path + "pull_request_commits.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_commits.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            String[] curLine = reader.readNext();
+            boolean abbreviated = false;
+            while ((nextLine = reader.readNext()) != null) {
+                if(abbreviated)
+                {
+                    writer.write(TAG_Semangit + TAG_Commit + curLine[1]);
+                }
+                else
+                {
+                    writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commit + curLine[1]);
+                }
+                if(curLine[0].equals(nextLine[0]))
+                {
+                    abbreviated = true;
+                    writer.write(",");
+                }
+                else
+                {
+                    abbreviated = false;
+                    writer.write(".");
+                }
+                writer.newLine();
+                curLine = nextLine;
+            }
+            //handle last line of file
+            if(abbreviated)
+            {
+                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + ".");
+            }
+            else
+            {
+                writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commit + curLine[1] + ".");
+            }
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
     private static void parseUsers(String path, boolean includePrefix)
     {
@@ -462,6 +612,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "comment_created_at \"" + nextLine[7] + "\".");
                 writer.newLine();
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -494,6 +645,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
                 writer.newLine();
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -534,6 +686,7 @@ public class MainClass {
                 writer.newLine();
                 //comment for [0]
             }
+            writer.close();
         }
         catch (Exception e)
         {
@@ -545,9 +698,6 @@ public class MainClass {
     /**
      * Files still to be converted:
      *     issue_labels
-     *     project_members
-     *     projects
-     *     pull_request_commits
      *     pull_request_history
      *     pull_requests
      *     repo_labels
@@ -667,10 +817,19 @@ public class MainClass {
         System.out.println("IssueEvents parsed.");
 
         parseIssues(args[0], false);
-        System.out.println("Issues parsed");
+        System.out.println("Issues parsed.");
 
         parseProjectCommits(args[0], false);
-        System.out.println("ProjectCommits parsed");
+        System.out.println("ProjectCommits parsed.");
+
+        parseProjectMembers(args[0], false);
+        System.out.println("ProjectMembers parsed.");
+
+        parseProjects(args[0], false);
+        System.out.println("Projects parsed.");
+
+        parsePullRequestCommits(args[0], false);
+        System.out.println("PullRequestCommits parsed.");
 
         try {
             /*String correctPath = args[0].concat("rdf/");
