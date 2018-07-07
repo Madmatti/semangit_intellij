@@ -20,10 +20,11 @@ public class MainClass {
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
-    private static final String TAG_Commit = "ghcom_";
-    private static final String TAG_Comment = "ghcomment_";
-    private static final String TAG_Issue = "ghissue_";
+    private static final String TAG_Commitprefix = "ghcom_";
+    private static final String TAG_Commentprefix = "ghcomment_";
+    private static final String TAG_Issueprefix = "ghissue_";
     private static final String TAG_Pullrequestprefix = "ghpr_";
+    private static final String TAG_Labelprefix = "ghlb_";
 
 
     private static void parseCommitParents(String path, boolean includePrefix) {
@@ -43,11 +44,11 @@ public class MainClass {
             while ((nextLine = reader.readNext()) != null) {
                 if(!abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_Commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commit + curLine[1]);
+                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commitprefix + curLine[1]);
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_Commit + curLine[1]); //only specifying next object. subject/predicate are abbreviated
+                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1]); //only specifying next object. subject/predicate are abbreviated
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -65,11 +66,11 @@ public class MainClass {
             //handle last line of file
             if(!abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_Commit + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commit + curLine[1] + ".");
+                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
+                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
             }
             writer.close();
         }
@@ -94,7 +95,7 @@ public class MainClass {
                 /*for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }*/
-                String commitURI = TAG_Semangit + TAG_Commit + nextLine[0];
+                String commitURI = TAG_Semangit + TAG_Commitprefix + nextLine[0];
                 writer.write(  commitURI + " a " + TAG_Semangit + "github_commit;");
                 writer.newLine();
                 writer.write(TAG_Semangit + "commit_sha \"" + nextLine[1] + "\";");
@@ -148,6 +149,8 @@ public class MainClass {
         }
     }
 
+
+
     private static void parseIssueEvents(String path, boolean includePrefix) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_events.csv"));
@@ -172,7 +175,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "github_issue_event_action \"" + nextLine[3] + "\" ] ");
                 writer.write(TAG_Semangit + "github_issue_event_actor " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_issue_event_for " + TAG_Semangit + TAG_Issue + nextLine[1] + ".");
+                writer.write(TAG_Semangit + "github_issue_event_for " + TAG_Semangit + TAG_Issueprefix + nextLine[1] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -183,6 +186,31 @@ public class MainClass {
             System.exit(1);
         }
     }
+
+
+
+    private static void parseIssueLabels(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "issue_labels.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issue_labels.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                //TODO! Dataset inconsistent?! It seems impossible that the issue_labels::label_id == repo_labels::id
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
 
     private static void parseIssues(String path, boolean includePrefix) {
         try {
@@ -204,7 +232,7 @@ public class MainClass {
                     curLine = nextLine;
                     continue;
                 }
-                String issueURL = TAG_Semangit + TAG_Issue + curLine[7];
+                String issueURL = TAG_Semangit + TAG_Issueprefix + curLine[7];
                 writer.write( issueURL + " a " + TAG_Semangit + "github_issue;");
                 writer.newLine();
                 writer.write(TAG_Semangit + "github_issue_project " + TAG_Semangit + TAG_Repoprefix + curLine[1] + ";");
@@ -284,7 +312,7 @@ public class MainClass {
                 }
                 else //no abbreviation occurred. Full subject predicate object triple printed
                 {
-                    writer.write(TAG_Semangit + TAG_Commit + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0]);
+                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0]);
                 }
 
                 abbreviated = (curLine[1].equals(nextLine[1]));
@@ -306,7 +334,7 @@ public class MainClass {
             }
             else //no abbreviation occurred. Full subject predicate object triple printed
             {
-                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0] + ".");
+                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0] + ".");
             }
 
             writer.close();
@@ -431,11 +459,11 @@ public class MainClass {
             while ((nextLine = reader.readNext()) != null) {
                 if(abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_Commit + curLine[1]);
+                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1]);
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commit + curLine[1]);
+                    writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commitprefix + curLine[1]);
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -453,11 +481,11 @@ public class MainClass {
             //handle last line of file
             if(abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_Commit + curLine[1] + ".");
+                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commit + curLine[1] + ".");
+                writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
             }
             writer.close();
         } catch (Exception e) {
@@ -498,6 +526,108 @@ public class MainClass {
             System.exit(1);
         }
     }
+
+
+
+
+    private static void parsePullRequests(String path, boolean includePrefix) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "pull_requests.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_requests.ttl"), 32768);
+            String[] nextLine;
+            if (includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while ((nextLine = reader.readNext()) != null) {
+                writer.write(TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + " a " + TAG_Semangit + "github_pull_request;");
+                writer.newLine();
+                //TODO: Which ID to choose? pullreq_id is far from unique, how do we even use it? Verify for all objects that we reference to, that we chose the correct id!!!
+                writer.write(TAG_Semangit + "pull_request_base_project " + TAG_Semangit + TAG_Repoprefix + nextLine[2] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "pull_request_head_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "pull_request_base_commit " + TAG_Semangit + TAG_Commitprefix + nextLine[4] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "pull_request_head_commit " + TAG_Semangit + TAG_Commitprefix + nextLine[3] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_pull_request_id " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_pull_request_intra_branch " + nextLine[6] + ".");
+                writer.newLine(); //TODO: github_pull_request_merged never set?!
+            }
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static void parseRepoLabels(String path, boolean includePrefix)
+    {
+        try
+        {
+            CSVReader reader = new CSVReader(new FileReader(path + "repo_labels.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/repo_labels.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while((nextLine = reader.readNext())!= null)
+            {
+                for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }
+                writer.write(TAG_Semangit + TAG_Labelprefix + nextLine[0] + " a " + TAG_Semangit + "github_repo_label ;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_repo_label_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_repo_label_name \"" + nextLine[2] + "\"."); //TODO: This should be a string in ontology??
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+    private static void parseRepoMilestones(String path, boolean includePrefix)
+    {
+        try
+        {
+            CSVReader reader = new CSVReader(new FileReader(path + "repo_milestones.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/repo_milestones.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while((nextLine = reader.readNext())!= null)
+            {
+                for (int i = 0; i < nextLine.length; i++) {
+                    nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
+                }
+                //TODO! repo_milestones is empty in oldest dump! Cannot convert without data...
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+
 
     private static void parseUsers(String path, boolean includePrefix)
     {
@@ -592,10 +722,6 @@ public class MainClass {
 
 
 
-
-
-
-
     /**
      * Comment section. Below are all functions related to comments.
      * commit_comments
@@ -617,9 +743,9 @@ public class MainClass {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(TAG_Semangit + TAG_Comment + "commit_" + nextLine[0] + " a " + TAG_Semangit + "comment;");
+                writer.write(TAG_Semangit + TAG_Commentprefix + "commit_" + nextLine[0] + " a " + TAG_Semangit + "comment;");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Commit + nextLine[1] + ";"); //comment for a commit
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Commitprefix + nextLine[1] + ";"); //comment for a commit
                 writer.newLine();
                 writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
                 writer.newLine();
@@ -673,7 +799,7 @@ public class MainClass {
                 //TODO: Let's verify the integrity of the RDF output of this
                 writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[3] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Issue + nextLine[0] + ";"); //comment for an issue
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Issueprefix + nextLine[0] + ";"); //comment for an issue
                 writer.newLine();
                 writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
                 writer.newLine();
@@ -731,9 +857,7 @@ public class MainClass {
     /**
      * Files still to be converted:
      *     issue_labels
-     *     pull_requests
-     *     repo_labels
-     *     repo_milestones
+     *     repo_milestones //MISSING IN DUMP!
      *     watchers //TODO: MISSING in ontology!!!
      */
 
@@ -865,6 +989,20 @@ public class MainClass {
 
         parsePullRequestHistory(args[0], false);
         System.out.println("PullRequestHistory parsed.");
+
+        parsePullRequests(args[0], false);
+        System.out.println("PullRequests parsed.");
+
+        parseRepoLabels(args[0], false);
+        System.out.println("RepoLabels parsed.");
+
+        parseRepoMilestones(args[0], false); //TODO: TO BE DONE!
+        System.out.println("RepoMilestones parsed.");
+
+        parseIssueLabels(args[0], false);
+        System.out.println("IssueLabels parsed."); //TODO: TO BE DONE!
+
+        //TODO: watchers. Not done in ontology!
 
         try {
             /*String correctPath = args[0].concat("rdf/");
