@@ -12,9 +12,16 @@ import org.rdfhdt.hdt.rdf.RDFParserFactory;
 import org.rdfhdt.hdt.tools.RDF2HDT;
 */
 
+import javax.management.relation.RoleUnresolved;
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class MainClass {
+public class RDFGenerator implements Runnable {
+
+    private String workOnFile;
+    private String path;
+    private boolean prefixes;
 
     private static final String PREFIX_Semangit = "<http://www.sg.com/ont/>";
     private static final String TAG_Semangit = "semangit:";
@@ -24,8 +31,13 @@ public class MainClass {
     private static final String TAG_Commentprefix = "ghcomment_";
     private static final String TAG_Issueprefix = "ghissue_";
     private static final String TAG_Pullrequestprefix = "ghpr_";
-    private static final String TAG_Labelprefix = "ghlb_";
+    private static final String TAG_Repolabelprefix = "ghlb_";
 
+    private static final Map<String, String> prefixTable = new HashMap<>();
+    private static void initPrefixTable()
+    {
+        prefixTable.put("", "");
+    }
 
     private static void parseCommitParents(String path, boolean includePrefix) {
         try {
@@ -119,7 +131,6 @@ public class MainClass {
     }
 
 
-
     private static void parseFollowers(String path, boolean includePrefix)
     {
         try {
@@ -135,6 +146,7 @@ public class MainClass {
                 writer.write("[ a " + TAG_Semangit + "github_follow_event;");
                 writer.newLine();
                 writer.write(TAG_Semangit + "github_following_since \"" + nextLine[2] + "\" ;");
+                writer.newLine();
                 writer.write(TAG_Semangit + "github_user_or_project 0 ] " + TAG_Semangit + "github_follower " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
                 writer.newLine();
                 writer.write(TAG_Semangit + "github_follows " + TAG_Semangit  + TAG_Userprefix + nextLine[0] + ".");
@@ -199,9 +211,40 @@ public class MainClass {
                 writer.newLine();
                 writer.newLine();
             }
+            String[] curLine = reader.readNext();
+            boolean abbreviated = false;
             while ((nextLine = reader.readNext()) != null) {
-                //TODO! Dataset inconsistent?! It seems impossible that the issue_labels::label_id == repo_labels::id
+                if(abbreviated)
+                {
+                    writer.write(TAG_Semangit + TAG_Issueprefix + curLine[1]); //only print object
+                }
+                else
+                {
+                    writer.write(TAG_Semangit + TAG_Repolabelprefix + curLine[0] + " " + TAG_Semangit + "github_issue_label_used_by " + TAG_Semangit + TAG_Issueprefix + curLine[1]); //print entire triple
+                }
+                if(curLine[0].equals(nextLine[0]))
+                {
+                    abbreviated = true;
+                    writer.write(",");
+                }
+                else {
+                    abbreviated = false;
+                    writer.write(".");
+                }
+                writer.newLine();
+
+                curLine = nextLine;
             }
+            if(abbreviated)
+            {
+                writer.write(TAG_Semangit + TAG_Issueprefix + curLine[1]); //only print object
+            }
+            else
+            {
+                writer.write(TAG_Semangit + TAG_Repolabelprefix + curLine[0] + " " + TAG_Semangit + "github_issue_label_used_by " + TAG_Semangit + TAG_Issueprefix + curLine[1]); //print entire triple
+            }
+            writer.write(".");
+            writer.newLine();
             writer.close();
         }
         catch (Exception e)
@@ -227,7 +270,7 @@ public class MainClass {
                 //SCHEMA WRONG!
                 //Format: id, repo id, reporter id, assignee id, pull request (0/1), pull request id, created at, issue id
                 //WARNING: Duplicates! Everything except for id might be equal?! Example: issue id 1575
-                if(nextLine[7].equals(curLine[7])) //avoid duplicates! TODO!
+                if(nextLine[7].equals(curLine[7]))
                 {
                     curLine = nextLine;
                     continue;
@@ -244,7 +287,7 @@ public class MainClass {
                     writer.write(TAG_Semangit + "github_issue_assignee " + TAG_Semangit + TAG_Userprefix + curLine[3] + ";");
                     writer.newLine();
                 }
-                if(!curLine[5].equals("N")) //TODO: test
+                if(!curLine[5].equals("N"))
                 {
                     writer.write(TAG_Semangit + "github_issue_pull_request " + TAG_Semangit + TAG_Pullrequestprefix + curLine[5] + ";");
                     writer.newLine();
@@ -419,7 +462,7 @@ public class MainClass {
                     writer.write(TAG_Semangit + "github_forked_from " + TAG_Semangit + TAG_Repoprefix + nextLine[7] + ";");
                     writer.newLine();
                 }
-                if(nextLine[8].equals("1")) //TODO: test
+                if(nextLine[8].equals("1"))
                 {
                     writer.write(TAG_Semangit + "github_project_deleted 1;");
                     writer.newLine();
@@ -511,10 +554,12 @@ public class MainClass {
                 //id, PR id, created at, action, actor
                 writer.write(TAG_Semangit + "github_pull_request_action_created_at \"" + nextLine[2] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_pull_request_action \"" + nextLine[3] + "\" ] "); //TODO: does NOT match ontology!!! This is badly designed!
+                writer.write(TAG_Semangit + "github_pull_request_action_id " + nextLine[0] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_pull_request_action_type \"" + nextLine[3] + "\" ] ");
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_pull_request_actor " + TAG_Semangit + TAG_Userprefix + nextLine[4] + ";"); //TODO: does NOT match ontology!!! This is MISSING!
+                    writer.write(TAG_Semangit + "github_pull_request_actor " + TAG_Semangit + TAG_Userprefix + nextLine[4] + ";");
                     writer.newLine();
                 }
                 writer.write(TAG_Semangit + "github_pull_request_action_pull_request " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[1] + ".");
@@ -543,7 +588,6 @@ public class MainClass {
             while ((nextLine = reader.readNext()) != null) {
                 writer.write(TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + " a " + TAG_Semangit + "github_pull_request;");
                 writer.newLine();
-                //TODO: Which ID to choose? pullreq_id is far from unique, how do we even use it? Verify for all objects that we reference to, that we chose the correct id!!!
                 writer.write(TAG_Semangit + "pull_request_base_project " + TAG_Semangit + TAG_Repoprefix + nextLine[2] + ";");
                 writer.newLine();
                 writer.write(TAG_Semangit + "pull_request_head_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
@@ -555,7 +599,7 @@ public class MainClass {
                 writer.write(TAG_Semangit + "github_pull_request_id " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
                 writer.newLine();
                 writer.write(TAG_Semangit + "github_pull_request_intra_branch " + nextLine[6] + ".");
-                writer.newLine(); //TODO: github_pull_request_merged never set?!
+                writer.newLine();
             }
             writer.close();
         } catch (Exception e) {
@@ -581,11 +625,11 @@ public class MainClass {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(TAG_Semangit + TAG_Labelprefix + nextLine[0] + " a " + TAG_Semangit + "github_repo_label ;");
+                writer.write(TAG_Semangit + TAG_Repolabelprefix + nextLine[0] + " a " + TAG_Semangit + "github_repo_label ;");
                 writer.newLine();
                 writer.write(TAG_Semangit + "github_repo_label_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_repo_label_name \"" + nextLine[2] + "\"."); //TODO: This should be a string in ontology??
+                writer.write(TAG_Semangit + "github_repo_label_name \"" + nextLine[2] + "\".");
                 writer.newLine();
             }
             writer.close();
@@ -719,6 +763,39 @@ public class MainClass {
         }
     }
 
+    //watchers
+
+    private static void parseWatchers(String path, boolean includePrefix)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "watchers.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/watchers.ttl"), 32768);
+            String[] nextLine;
+            if(includePrefix) {
+                writer.write("@prefix semangit: " + PREFIX_Semangit + " .");
+                writer.newLine();
+                writer.newLine();
+            }
+            while((nextLine = reader.readNext())!= null) {
+                writer.write("[ a " + TAG_Semangit + "github_follow_event;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_following_since \"" + nextLine[2] + "\" ;");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_user_or_project 1 ] " + TAG_Semangit + "github_follower " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
+                writer.newLine();
+                writer.write(TAG_Semangit + "github_follows " + TAG_Semangit  + TAG_Repoprefix + nextLine[0] + ".");
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
 
 
 
@@ -833,13 +910,16 @@ public class MainClass {
                 //TODO: Let's verify the integrity of the RDF output of this
                 writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[6] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + ";"); //comment for a pull request
+                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + ","); //comment for a pull request
                 writer.newLine();
+                writer.write(TAG_Semangit + TAG_Commitprefix + nextLine[5] + ";");
+                writer.newLine();
+
                 writer.write(TAG_Semangit + "comment_pos " + nextLine[3] + ";");
                 writer.newLine();
                 writer.write(TAG_Semangit + "comment_body \"" + nextLine[4] + "\";");
                 writer.newLine();
-                //TODO: commit_id?!
+
 
                 writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
                 writer.newLine();
@@ -856,9 +936,7 @@ public class MainClass {
 
     /**
      * Files still to be converted:
-     *     issue_labels
      *     repo_milestones //MISSING IN DUMP!
-     *     watchers //TODO: MISSING in ontology!!!
      */
 
 
@@ -912,6 +990,46 @@ public class MainClass {
         }
     }
 
+    RDFGenerator(String workOnFile, String path, boolean prefixes)
+    {
+        this.workOnFile = workOnFile;
+        this.path = path;
+        this.prefixes = prefixes;
+    }
+
+    public void run()
+    {
+        if(this.workOnFile == null)
+        {
+            throw(new RuntimeException("You need to define a file to work on!"));
+        }
+        switch ( workOnFile )
+        {
+            case "commit_comments": parseCommitComments(this.path, this.prefixes);break;
+            case "commit_parents": parseCommitParents(this.path, this.prefixes);break;
+            case "commits": parseCommits(this.path, this.prefixes);break;
+            case "followers": parseFollowers(this.path, this.prefixes);break;
+            case "issue_comments": parseIssueComments(this.path, this.prefixes);break;
+            case "issue_events": parseIssueEvents(this.path, this.prefixes);break;
+            case "issue_labels": parseIssueLabels(this.path, this.prefixes);break;
+            case "issues": parseIssues(this.path, this.prefixes);break;
+            case "organization_members": parseOrganizationMembers(this.path, this.prefixes);break;
+            case "project_commits": parseProjectCommits(this.path, this.prefixes);break;
+            case "project_members": parseProjectMembers(this.path, this.prefixes);break;
+            case "projects": parseProjects(this.path, this.prefixes);break;
+            case "pull_request_comments": parsePullRequestComments(this.path, this.prefixes);break;
+            case "pull_request_commits": parsePullRequestCommits(this.path, this.prefixes);break;
+            case "pull_request_history": parsePullRequestHistory(this.path, this.prefixes);break;
+            case "pull_requests": parsePullRequests(this.path, this.prefixes);break;
+            case "users": parseUsers(this.path, this.prefixes);break;
+            case "repo_labels": parseRepoLabels(this.path, this.prefixes);break;
+            case "repo_milestones":parseRepoMilestones(this.path, this.prefixes);break;
+            case "watchers":parseWatchers(this.path, this.prefixes);break;
+            default: throw new RuntimeException("Unknown file name specified! Which file to parse?!");
+        }
+
+    }
+
     public static void main(String[] args)
     {
         File index = new File(args[0] + "rdf");
@@ -943,8 +1061,31 @@ public class MainClass {
             System.exit(1);
         }
 
+        //(new Thread(new RDFGenerator("organization_members", args[0], true))).run();
 
-        parseOrganizationMembers(args[0], true);
+        (new Thread(new RDFGenerator("commit_comments", args[0], true))).run();
+        (new Thread(new RDFGenerator("commit_parents", args[0], false))).run();
+        (new Thread(new RDFGenerator("commits", args[0], false))).run();
+        (new Thread(new RDFGenerator("followers", args[0], false))).run();
+        (new Thread(new RDFGenerator("issue_comments", args[0], false))).run();
+        (new Thread(new RDFGenerator("issue_events", args[0], false))).run();
+        (new Thread(new RDFGenerator("issue_labels", args[0], false))).run();
+        (new Thread(new RDFGenerator("issues", args[0], false))).run();
+        (new Thread(new RDFGenerator("organization_members", args[0], false))).run();
+        (new Thread(new RDFGenerator("project_commits", args[0], false))).run();
+        (new Thread(new RDFGenerator("project_members", args[0], false))).run();
+        (new Thread(new RDFGenerator("projects", args[0], false))).run();
+        (new Thread(new RDFGenerator("pull_request_comments", args[0], false))).run();
+        (new Thread(new RDFGenerator("pull_request_commits", args[0], false))).run();
+        (new Thread(new RDFGenerator("pull_request_history", args[0], false))).run();
+        (new Thread(new RDFGenerator("pull_requests", args[0], false))).run();
+        (new Thread(new RDFGenerator("users", args[0], false))).run();
+        (new Thread(new RDFGenerator("repo_labels", args[0], false))).run();
+        (new Thread(new RDFGenerator("repo_milestones", args[0], false))).run();
+        (new Thread(new RDFGenerator("watchers", args[0], false))).run();
+
+
+        /*parseOrganizationMembers(args[0], true);
         //rdf2hdt(args[0], "organization_members");
         System.out.println("Organizations parsed.");
 
@@ -1000,25 +1141,57 @@ public class MainClass {
         System.out.println("RepoMilestones parsed.");
 
         parseIssueLabels(args[0], false);
-        System.out.println("IssueLabels parsed."); //TODO: TO BE DONE!
+        System.out.println("IssueLabels parsed.");
 
-        //TODO: watchers. Not done in ontology!
-
+        parseWatchers(args[0], false);
+        System.out.println("Watchers parsed.");
+        */
         try {
-            /*String correctPath = args[0].concat("rdf/");
-            System.out.println("Appending Org Members");
-            
+            String correctPath = args[0].concat("rdf/");
             appendFileToOutput(correctPath, "organization_members.ttl");
 
-            System.out.println("Appending followers");
             appendFileToOutput(correctPath, "followers.ttl");
-
-            System.out.println("Appending users");
             appendFileToOutput(correctPath, "users.ttl");
-            */
+            appendFileToOutput(correctPath, "commits.ttl");
+            appendFileToOutput(correctPath, "commit_parents.ttl");
+            appendFileToOutput(correctPath, "commit_comments.ttl");
+            appendFileToOutput(correctPath, "issue_comments.ttl");
+            appendFileToOutput(correctPath, "pull_request_comments.ttl");
+            appendFileToOutput(correctPath, "issue_events.ttl");
+            appendFileToOutput(correctPath, "issues.ttl");
+            appendFileToOutput(correctPath, "project_members.ttl");
+            appendFileToOutput(correctPath, "projects.ttl");
+            appendFileToOutput(correctPath, "pull_request_history.ttl");
+            appendFileToOutput(correctPath, "pull_requests.ttl");
+            appendFileToOutput(correctPath, "repo_labels.ttl");
+            appendFileToOutput(correctPath, "repo_milestones.ttl");
+            appendFileToOutput(correctPath, "issue_labels.ttl");
+            appendFileToOutput(correctPath, "watchers.ttl");
+
+            if(index.exists())
+            {
+                String[] entries = index.list();
+                if(entries != null)
+                {
+                    for(String s : entries)
+                    {
+                        File currentFile = new File(index.getPath(), s);
+                        if(s.equals("combined.ttl"))
+                        {
+                            continue;
+                        }
+                        if(!currentFile.delete())
+                        {
+                            System.out.println("Failed to delete existing file: " + index.getPath() + s);
+                            System.exit(1);
+                        }
+                    }
+                }
+            }
+
+
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
