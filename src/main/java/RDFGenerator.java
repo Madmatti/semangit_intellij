@@ -14,6 +14,7 @@ import org.rdfhdt.hdt.tools.RDF2HDT;
 
 import javax.management.relation.RoleUnresolved;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1061,29 +1062,46 @@ public class RDFGenerator implements Runnable {
             System.exit(1);
         }
 
-        //(new Thread(new RDFGenerator("organization_members", args[0], true))).run();
+        //(new Thread(new RDFGenerator("organization_members", args[0], true)));
 
-        (new Thread(new RDFGenerator("commit_comments", args[0], true))).run();
-        (new Thread(new RDFGenerator("commit_parents", args[0], false))).run();
-        (new Thread(new RDFGenerator("commits", args[0], false))).run();
-        (new Thread(new RDFGenerator("followers", args[0], false))).run();
-        (new Thread(new RDFGenerator("issue_comments", args[0], false))).run();
-        (new Thread(new RDFGenerator("issue_events", args[0], false))).run();
-        (new Thread(new RDFGenerator("issue_labels", args[0], false))).run();
-        (new Thread(new RDFGenerator("issues", args[0], false))).run();
-        (new Thread(new RDFGenerator("organization_members", args[0], false))).run();
-        (new Thread(new RDFGenerator("project_commits", args[0], false))).run();
-        (new Thread(new RDFGenerator("project_members", args[0], false))).run();
-        (new Thread(new RDFGenerator("projects", args[0], false))).run();
-        (new Thread(new RDFGenerator("pull_request_comments", args[0], false))).run();
-        (new Thread(new RDFGenerator("pull_request_commits", args[0], false))).run();
-        (new Thread(new RDFGenerator("pull_request_history", args[0], false))).run();
-        (new Thread(new RDFGenerator("pull_requests", args[0], false))).run();
-        (new Thread(new RDFGenerator("users", args[0], false))).run();
-        (new Thread(new RDFGenerator("repo_labels", args[0], false))).run();
-        (new Thread(new RDFGenerator("repo_milestones", args[0], false))).run();
-        (new Thread(new RDFGenerator("watchers", args[0], false))).run();
 
+        ArrayList<Thread> processes = new ArrayList<>();
+        processes.add(new Thread(new RDFGenerator("commit_comments", args[0], true)));
+        processes.add(new Thread(new RDFGenerator("commit_parents", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("commits", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("followers", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("issue_comments", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("issue_events", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("issue_labels", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("issues", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("organization_members", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("project_commits", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("project_members", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("projects", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("pull_request_comments", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("pull_request_commits", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("pull_request_history", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("pull_requests", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("users", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("repo_labels", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("repo_milestones", args[0], false)));
+        processes.add(new Thread(new RDFGenerator("watchers", args[0], false)));
+
+        for(Thread p: processes)
+        {
+            p.start();
+        }
+        for(Thread p: processes)
+        {
+            try {
+                p.join();
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
 
         /*parseOrganizationMembers(args[0], true);
         //rdf2hdt(args[0], "organization_members");
