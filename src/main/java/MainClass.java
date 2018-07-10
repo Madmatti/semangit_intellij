@@ -12,13 +12,12 @@ import org.rdfhdt.hdt.rdf.RDFParserFactory;
 import org.rdfhdt.hdt.tools.RDF2HDT;
 */
 
-import javax.management.relation.RoleUnresolved;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RDFGenerator implements Runnable {
+public class MainClass implements Runnable {
 
     private String workOnFile;
     private String path;
@@ -37,7 +36,133 @@ public class RDFGenerator implements Runnable {
     private static final Map<String, String> prefixTable = new HashMap<>();
     private static void initPrefixTable()
     {
-        prefixTable.put("", "");
+        //ProjectCommits
+        prefixTable.put(TAG_Semangit + TAG_Repoprefix, ""); //most common prefix gets empty prefix in output
+        prefixTable.put(TAG_Semangit + "commit_repository", "a");
+        prefixTable.put(TAG_Semangit + TAG_Commitprefix, "b");
+
+
+        //CommitParents
+        prefixTable.put(TAG_Semangit + "commit_has_parent", "c");
+
+        //Followers
+        prefixTable.put(TAG_Semangit + "github_commit", "d");
+        prefixTable.put(TAG_Semangit + "commit_sha", "e");
+        prefixTable.put(TAG_Semangit + "commit_author", "f");
+        prefixTable.put(TAG_Semangit + "commit_committed_by", "g");
+        prefixTable.put(TAG_Semangit + "commit_created_at", "h");
+        prefixTable.put(TAG_Semangit + "github_follow_event", "i");
+        prefixTable.put(TAG_Semangit + "github_following_since", "j");
+        prefixTable.put(TAG_Semangit + "github_user_or_project", "k");
+        prefixTable.put(TAG_Semangit + "github_follower", "l");
+        prefixTable.put(TAG_Semangit  + TAG_Userprefix, "m");
+        prefixTable.put(TAG_Semangit + "github_follows", "n");
+
+        //Issue events
+        prefixTable.put(TAG_Semangit + "github_issue_event", "o");
+        prefixTable.put(TAG_Semangit + "github_issue_event_created_at", "p");
+        prefixTable.put(TAG_Semangit + "github_issue_event_action_specific_sha", "q");
+        prefixTable.put(TAG_Semangit + "github_issue_event_action", "r");
+        prefixTable.put(TAG_Semangit + "github_issue_event_actor", "s");
+        prefixTable.put(TAG_Semangit + "github_issue_event_for", "t");
+
+        //Issue Labels
+        prefixTable.put(TAG_Semangit + TAG_Issueprefix, "u");
+        prefixTable.put(TAG_Semangit + TAG_Repolabelprefix, "v");
+        prefixTable.put(TAG_Semangit + "github_issue_label_used_by", "w");
+
+        //Issues
+        prefixTable.put(TAG_Semangit + "github_issue", "x");
+        prefixTable.put(TAG_Semangit + "github_issue_project", "y");
+        prefixTable.put(TAG_Semangit + "github_issue_reporter", "z");
+        prefixTable.put(TAG_Semangit + "github_issue_assignee", "aa");
+        prefixTable.put(TAG_Semangit + "github_issue_pull_request", "ab");
+        prefixTable.put(TAG_Semangit + "github_issue_created_at", "ac");
+        prefixTable.put(TAG_Semangit + TAG_Pullrequestprefix, "ad");
+
+
+        //Organization Members
+        prefixTable.put(TAG_Semangit + "github_organization_join_event", "ae");
+        prefixTable.put(TAG_Semangit + "github_organization_joined_at", "af");
+        prefixTable.put(TAG_Semangit + "github_organization_joined_by", "ag");
+        prefixTable.put(TAG_Semangit + "github_organization_is_joined", "ah");
+
+        //Project Members
+        prefixTable.put(TAG_Semangit + "github_project_join_event", "ai");
+        prefixTable.put(TAG_Semangit + "github_project_join_event_created_at", "aj");
+        prefixTable.put(TAG_Semangit + "github_project_joining_user", "ak");
+        prefixTable.put(TAG_Semangit + "github_project_joined", "al");
+
+        //Projects
+        prefixTable.put(TAG_Semangit + "github_project", "am");
+        prefixTable.put(TAG_Semangit + "repository_url", "an");
+        prefixTable.put(TAG_Semangit + "github_has_owner", "ao");
+        prefixTable.put(TAG_Semangit + "github_project_name", "ap");
+        prefixTable.put(TAG_Semangit + "github_project_description", "aq");
+        prefixTable.put(TAG_Semangit + "repository_language", "ar");
+        prefixTable.put(TAG_Semangit + "github_forked_from", "as");
+        prefixTable.put(TAG_Semangit + "github_project_deleted", "at");
+        prefixTable.put(TAG_Semangit + "repository_created_at", "au");
+
+        //Pull Request Commits
+        prefixTable.put(TAG_Semangit + "pull_request_has_commit", "av");
+
+        //Pull Request History
+        prefixTable.put(TAG_Semangit + "github_pull_request_action", "aw");
+        prefixTable.put(TAG_Semangit + "github_pull_request_action_created_at", "ax");
+        prefixTable.put(TAG_Semangit + "github_pull_request_action_id", "ay");
+        prefixTable.put(TAG_Semangit + "github_pull_request_action_type", "az");
+        prefixTable.put(TAG_Semangit + "github_pull_request_actor", "ba");
+        prefixTable.put(TAG_Semangit + "github_pull_request_action_pull_request", "bb");
+
+        //Pull Requests
+        prefixTable.put(TAG_Semangit + "github_pull_request", "bc");
+        prefixTable.put(TAG_Semangit + "pull_request_base_project", "bd");
+        prefixTable.put(TAG_Semangit + "pull_request_head_project", "be");
+        prefixTable.put(TAG_Semangit + "pull_request_base_commit", "bf");
+        prefixTable.put(TAG_Semangit + "pull_request_head_commit", "bg");
+        prefixTable.put(TAG_Semangit + "github_pull_request_id", "bh");
+        prefixTable.put(TAG_Semangit + "github_pull_request_intra_branch", "bi");
+
+        //Repo Labels
+        prefixTable.put(TAG_Semangit + "github_repo_label", "bj");
+        prefixTable.put(TAG_Semangit + "github_repo_label_project", "bk");
+        prefixTable.put(TAG_Semangit + "github_repo_label_name", "bl");
+
+        //User
+        prefixTable.put(TAG_Semangit + "github_user", "bm");
+        prefixTable.put(TAG_Semangit + "github_login", "bn");
+        prefixTable.put(TAG_Semangit + "github_name", "bo");
+        prefixTable.put(TAG_Semangit + "github_company", "bp");
+        prefixTable.put(TAG_Semangit + "github_user_location", "bq");
+        prefixTable.put(TAG_Semangit + "user_email", "br");
+        prefixTable.put(TAG_Semangit + "github_user_created_at", "bs");
+        prefixTable.put(TAG_Semangit + "github_user_is_org", "bt");
+        prefixTable.put(TAG_Semangit + "github_user_deleted", "bu");
+        prefixTable.put(TAG_Semangit + "github_user_fake", "bv");
+
+        //Watchers == Followers
+
+        //Comments
+        prefixTable.put(TAG_Semangit + TAG_Commentprefix + "commit_", "bw");
+        prefixTable.put(TAG_Semangit + "comment_for", "bx");
+        prefixTable.put(TAG_Semangit + "comment_author", "by");
+        prefixTable.put(TAG_Semangit + "comment_body", "bz");
+        prefixTable.put(TAG_Semangit + "comment_line", "ca");
+        prefixTable.put(TAG_Semangit + "comment_pos", "cb");
+        prefixTable.put(TAG_Semangit + "comment_created_at", "cc");
+
+        /*
+        prefixTable.put(, "cd");
+        prefixTable.put(, "ce");
+        prefixTable.put(, "cf");
+        prefixTable.put(, "cg");
+        prefixTable.put(, "ch");
+        prefixTable.put(, "ci");
+        prefixTable.put(, "cj");
+        prefixTable.put(, "ck");*/
+
+        //TODO: Repo Milestones...
     }
 
     private static void parseCommitParents(String path, boolean includePrefix) {
@@ -298,6 +423,7 @@ public class RDFGenerator implements Runnable {
                 curLine = nextLine;
 
             }
+            //TODO: Handle last line!!!
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -941,36 +1067,6 @@ public class RDFGenerator implements Runnable {
      */
 
 
-
-
-    //removed! HDT fails to satisfy our needs, as there are too many bugs in the software, making it impossible to merge very large files
-    /*public static void rdf2hdt(String path, String table)
-    {
-        String baseURI = "http://example.com/mydataset";
-        String rdfInput = path.concat("rdf/" + table + ".ttl");
-        String inputType = "turtle";    commit_comments
-    commit_parents
-    commits
-    issue_comments
-    issue_events
-
-
-        String hdtOutput = path.concat("hdt/" + table + ".hdt");
-        try
-        {
-            //HDTSpecification specification = new HDTSpecification();
-            //specification.set("triples.format", HDTVocabulary.TRIPLES_TYPE_TRIPLESLIST);
-            HDT hdt = HDTManager.generateHDT(rdfInput, baseURI, RDFNotation.parse(inputType), new HDTSpecification(), null);
-            hdt.saveToHDT(hdtOutput, null);
-            hdt.close();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }*/
-
     private static void appendFileToOutput(String directory, String fileName)
     {
 
@@ -991,7 +1087,7 @@ public class RDFGenerator implements Runnable {
         }
     }
 
-    RDFGenerator(String workOnFile, String path, boolean prefixes)
+    MainClass(String workOnFile, String path, boolean prefixes)
     {
         this.workOnFile = workOnFile;
         this.path = path;
@@ -1062,30 +1158,30 @@ public class RDFGenerator implements Runnable {
             System.exit(1);
         }
 
-        //(new Thread(new RDFGenerator("organization_members", args[0], true)));
+        //(new Thread(new MainClass("organization_members", args[0], true)));
 
 
         ArrayList<Thread> processes = new ArrayList<>();
-        processes.add(new Thread(new RDFGenerator("commit_comments", args[0], true)));
-        processes.add(new Thread(new RDFGenerator("commit_parents", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("commits", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("followers", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("issue_comments", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("issue_events", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("issue_labels", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("issues", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("organization_members", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("project_commits", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("project_members", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("projects", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("pull_request_comments", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("pull_request_commits", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("pull_request_history", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("pull_requests", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("users", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("repo_labels", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("repo_milestones", args[0], false)));
-        processes.add(new Thread(new RDFGenerator("watchers", args[0], false)));
+        processes.add(new Thread(new MainClass("commit_comments", args[0], true)));
+        processes.add(new Thread(new MainClass("commit_parents", args[0], false)));
+        processes.add(new Thread(new MainClass("commits", args[0], false)));
+        processes.add(new Thread(new MainClass("followers", args[0], false)));
+        processes.add(new Thread(new MainClass("issue_comments", args[0], false)));
+        processes.add(new Thread(new MainClass("issue_events", args[0], false)));
+        processes.add(new Thread(new MainClass("issue_labels", args[0], false)));
+        processes.add(new Thread(new MainClass("issues", args[0], false)));
+        processes.add(new Thread(new MainClass("organization_members", args[0], false)));
+        processes.add(new Thread(new MainClass("project_commits", args[0], false)));
+        processes.add(new Thread(new MainClass("project_members", args[0], false)));
+        processes.add(new Thread(new MainClass("projects", args[0], false)));
+        processes.add(new Thread(new MainClass("pull_request_comments", args[0], false)));
+        processes.add(new Thread(new MainClass("pull_request_commits", args[0], false)));
+        processes.add(new Thread(new MainClass("pull_request_history", args[0], false)));
+        processes.add(new Thread(new MainClass("pull_requests", args[0], false)));
+        processes.add(new Thread(new MainClass("users", args[0], false)));
+        processes.add(new Thread(new MainClass("repo_labels", args[0], false)));
+        processes.add(new Thread(new MainClass("repo_milestones", args[0], false)));
+        processes.add(new Thread(new MainClass("watchers", args[0], false)));
 
         for(Thread p: processes)
         {
@@ -1103,76 +1199,11 @@ public class RDFGenerator implements Runnable {
             }
         }
 
-        /*parseOrganizationMembers(args[0], true);
-        //rdf2hdt(args[0], "organization_members");
-        System.out.println("Organizations parsed.");
-
-        parseFollowers(args[0], false);
-        System.out.println("Followers parsed.");
-
-        parseUsers(args[0], false);
-        System.out.println("Users parsed.");
-
-        parseCommits(args[0], false);
-        System.out.println("Commits parsed.");
-
-        parseCommitParents(args[0], false);
-        System.out.println("CommitParents parsed.");
-
-        parseCommitComments(args[0], false);
-        System.out.println("CommitComments parsed.");
-
-        parseIssueComments(args[0], false);
-        System.out.println("IssueComments parsed.");
-
-        parsePullRequestComments(args[0], false);
-        System.out.println("PullRequestComments parsed.");
-
-        parseIssueEvents(args[0], false);
-        System.out.println("IssueEvents parsed.");
-
-        parseIssues(args[0], false);
-        System.out.println("Issues parsed.");
-
-        parseProjectCommits(args[0], false);
-        System.out.println("ProjectCommits parsed.");
-
-        parseProjectMembers(args[0], false);
-        System.out.println("ProjectMembers parsed.");
-
-        parseProjects(args[0], false);
-        System.out.println("Projects parsed.");
-
-        parsePullRequestCommits(args[0], false);
-        System.out.println("PullRequestCommits parsed.");
-
-        parsePullRequestHistory(args[0], false);
-        System.out.println("PullRequestHistory parsed.");
-
-        parsePullRequests(args[0], false);
-        System.out.println("PullRequests parsed.");
-
-        parseRepoLabels(args[0], false);
-        System.out.println("RepoLabels parsed.");
-
-        parseRepoMilestones(args[0], false); //TODO: TO BE DONE!
-        System.out.println("RepoMilestones parsed.");
-
-        parseIssueLabels(args[0], false);
-        System.out.println("IssueLabels parsed.");
-
-        parseWatchers(args[0], false);
-        System.out.println("Watchers parsed.");
-        */
         try {
             String correctPath = args[0].concat("rdf/");
-            appendFileToOutput(correctPath, "organization_members.ttl");
-
-            appendFileToOutput(correctPath, "followers.ttl");
-            appendFileToOutput(correctPath, "users.ttl");
+            appendFileToOutput(correctPath, "commit_comments.ttl");
             appendFileToOutput(correctPath, "commits.ttl");
             appendFileToOutput(correctPath, "commit_parents.ttl");
-            appendFileToOutput(correctPath, "commit_comments.ttl");
             appendFileToOutput(correctPath, "issue_comments.ttl");
             appendFileToOutput(correctPath, "pull_request_comments.ttl");
             appendFileToOutput(correctPath, "issue_events.ttl");
@@ -1185,7 +1216,9 @@ public class RDFGenerator implements Runnable {
             appendFileToOutput(correctPath, "repo_milestones.ttl");
             appendFileToOutput(correctPath, "issue_labels.ttl");
             appendFileToOutput(correctPath, "watchers.ttl");
-
+            appendFileToOutput(correctPath, "organization_members.ttl");
+            appendFileToOutput(correctPath, "followers.ttl");
+            appendFileToOutput(correctPath, "users.ttl");
             if(index.exists())
             {
                 String[] entries = index.list();
