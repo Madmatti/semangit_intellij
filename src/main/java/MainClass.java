@@ -1191,7 +1191,7 @@ public class MainClass implements Runnable {
             initPrefixTable();
 
             ArrayList<Thread> processes = new ArrayList<>();
-            processes.add(new Thread(new MainClass("commit_comments", args[0], true)));
+            processes.add(new Thread(new MainClass("commit_comments", args[0], false)));
             processes.add(new Thread(new MainClass("commit_parents", args[0], false)));
             processes.add(new Thread(new MainClass("commits", args[0], false)));
             processes.add(new Thread(new MainClass("followers", args[0], false)));
