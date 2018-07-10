@@ -16,6 +16,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class MainClass implements Runnable {
 
@@ -144,6 +145,7 @@ public class MainClass implements Runnable {
         //Watchers == Followers
 
         //Comments
+        prefixTable.put(TAG_Semangit + "comment", "cd");
         prefixTable.put(TAG_Semangit + TAG_Commentprefix + "commit_", "bw");
         prefixTable.put(TAG_Semangit + "comment_for", "bx");
         prefixTable.put(TAG_Semangit + "comment_author", "by");
@@ -151,9 +153,7 @@ public class MainClass implements Runnable {
         prefixTable.put(TAG_Semangit + "comment_line", "ca");
         prefixTable.put(TAG_Semangit + "comment_pos", "cb");
         prefixTable.put(TAG_Semangit + "comment_created_at", "cc");
-
         /*
-        prefixTable.put(, "cd");
         prefixTable.put(, "ce");
         prefixTable.put(, "cf");
         prefixTable.put(, "cg");
@@ -165,6 +165,15 @@ public class MainClass implements Runnable {
         //TODO: Repo Milestones...
     }
 
+    private static String getPrefix(String s)
+    {
+        if(prefixTable.get(s) == null)
+        {
+            System.out.println("Prefix for " + s + " missing.");
+        }
+        return prefixTable.get(s) + ":";
+    }
+    
     private static void parseCommitParents(String path, boolean includePrefix) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_parents.csv"));
@@ -182,11 +191,11 @@ public class MainClass implements Runnable {
             while ((nextLine = reader.readNext()) != null) {
                 if(!abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commitprefix + curLine[1]);
+                    writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]);
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1]); //only specifying next object. subject/predicate are abbreviated
+                    writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]); //only specifying next object. subject/predicate are abbreviated
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -204,11 +213,11 @@ public class MainClass implements Runnable {
             //handle last line of file
             if(!abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[0] + " " + TAG_Semangit + "commit_has_parent " + TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
+                writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + ".");
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
+                writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + "."); //only specifying next object. subject/predicate are abbreviated
             }
             writer.close();
         }
@@ -233,18 +242,18 @@ public class MainClass implements Runnable {
                 /*for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }*/
-                String commitURI = TAG_Semangit + TAG_Commitprefix + nextLine[0];
-                writer.write(  commitURI + " a " + TAG_Semangit + "github_commit;");
+                String commitURI = getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[0];
+                writer.write(  commitURI + " a " + getPrefix(TAG_Semangit + "github_commit") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "commit_sha \"" + nextLine[1] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "commit_sha") + " \"" + nextLine[1] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "commit_author " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "commit_author") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "commit_committed_by " + TAG_Semangit + TAG_Userprefix + nextLine[3] + ";");
+                writer.write(getPrefix(TAG_Semangit + "commit_committed_by") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[3] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + nextLine[4] + ";");
+                writer.write(getPrefix(TAG_Semangit + "commit_repository") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[4] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "commit_created_at \"" + nextLine[5] + "\".");
+                writer.write(getPrefix(TAG_Semangit + "commit_created_at") + " \"" + nextLine[5] + "\".");
                 writer.newLine();
             }
             writer.close();
@@ -269,13 +278,13 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while((nextLine = reader.readNext())!= null) {
-                writer.write("[ a " + TAG_Semangit + "github_follow_event;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_following_since \"" + nextLine[2] + "\" ;");
+                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\" ;");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_user_or_project 0 ] " + TAG_Semangit + "github_follower " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " 0 ] " + getPrefix(TAG_Semangit + "github_follower") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_follows " + TAG_Semangit  + TAG_Userprefix + nextLine[0] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_follows") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -301,19 +310,19 @@ public class MainClass implements Runnable {
             }
             while ((nextLine = reader.readNext()) != null) {
                 //event id, issue id, actor id, action, action specific sha, created at
-                writer.write("[ a " + TAG_Semangit + "github_issue_event;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_issue_event") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_issue_event_created_at \"" + nextLine[5] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_event_created_at") + " \"" + nextLine[5] + "\";");
                 writer.newLine();
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_issue_event_action_specific_sha \"" + nextLine[4] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_issue_event_action_specific_sha") + " \"" + nextLine[4] + "\";");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_issue_event_action \"" + nextLine[3] + "\" ] ");
-                writer.write(TAG_Semangit + "github_issue_event_actor " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_event_action") + " \"" + nextLine[3] + "\" ] ");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_event_actor") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_issue_event_for " + TAG_Semangit + TAG_Issueprefix + nextLine[1] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_event_for") + " " + getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[1] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -342,11 +351,11 @@ public class MainClass implements Runnable {
             while ((nextLine = reader.readNext()) != null) {
                 if(abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_Issueprefix + curLine[1]); //only print object
+                    writer.write(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1]); //only print object
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_Repolabelprefix + curLine[0] + " " + TAG_Semangit + "github_issue_label_used_by " + TAG_Semangit + TAG_Issueprefix + curLine[1]); //print entire triple
+                    writer.write(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1]); //print entire triple
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -363,11 +372,11 @@ public class MainClass implements Runnable {
             }
             if(abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_Issueprefix + curLine[1]); //only print object
+                writer.write(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1]); //only print object
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_Repolabelprefix + curLine[0] + " " + TAG_Semangit + "github_issue_label_used_by " + TAG_Semangit + TAG_Issueprefix + curLine[1]); //print entire triple
+                writer.write(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1]); //print entire triple
             }
             writer.write(".");
             writer.newLine();
@@ -401,24 +410,24 @@ public class MainClass implements Runnable {
                     curLine = nextLine;
                     continue;
                 }
-                String issueURL = TAG_Semangit + TAG_Issueprefix + curLine[7];
+                String issueURL = getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[7];
                 writer.write( issueURL + " a " + TAG_Semangit + "github_issue;");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_issue_project " + TAG_Semangit + TAG_Repoprefix + curLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_issue_reporter " + TAG_Semangit + TAG_Userprefix + curLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2] + ";");
                 writer.newLine();
                 if(!curLine[3].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_issue_assignee " + TAG_Semangit + TAG_Userprefix + curLine[3] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3] + ";");
                     writer.newLine();
                 }
                 if(!curLine[5].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_issue_pull_request " + TAG_Semangit + TAG_Pullrequestprefix + curLine[5] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5] + ";");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_issue_created_at \"" + curLine[6] + "\".");
+                writer.write(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
                 writer.newLine();
                 curLine = nextLine;
 
@@ -444,11 +453,11 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while((nextLine = reader.readNext())!= null) {
-                writer.write("[ a " + TAG_Semangit + "github_organization_join_event;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_organization_join_event") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_organization_joined_at \"" + nextLine[2] + "\" ] " + TAG_Semangit + "github_organization_joined_by " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_organization_joined_at") + " \"" + nextLine[2] + "\" ] " + getPrefix(TAG_Semangit + "github_organization_joined_by") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_organization_is_joined " + TAG_Semangit  + TAG_Userprefix + nextLine[0] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_organization_is_joined") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -478,11 +487,11 @@ public class MainClass implements Runnable {
             while((nextLine = reader.readNext())!= null) { //TODO: sticking to ontology for now. Check if reversing the relation would save space!
                 if(abbreviated) //abbreviated in previous step. Only need to print object now
                 {
-                    writer.write(TAG_Semangit + TAG_Repoprefix + curLine[0]); //one commit for multiple repositories (branching / merging)
+                    writer.write(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[0]); //one commit for multiple repositories (branching / merging)
                 }
                 else //no abbreviation occurred. Full subject predicate object triple printed
                 {
-                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0]);
+                    writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + " " + getPrefix(TAG_Semangit + "commit_repository") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[0]);
                 }
 
                 abbreviated = (curLine[1].equals(nextLine[1]));
@@ -500,11 +509,11 @@ public class MainClass implements Runnable {
             //handle last line
             if(abbreviated) //abbreviated in previous step. Only need to print object now
             {
-                writer.write(TAG_Semangit + TAG_Repoprefix + curLine[0] + "."); //one commit for multiple repositories (branching / merging)
+                writer.write(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[0] + "."); //one commit for multiple repositories (branching / merging)
             }
             else //no abbreviation occurred. Full subject predicate object triple printed
             {
-                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + " " + TAG_Semangit + "commit_repository " + TAG_Semangit + TAG_Repoprefix + curLine[0] + ".");
+                writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + " " + getPrefix(TAG_Semangit + "commit_repository") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[0] + ".");
             }
 
             writer.close();
@@ -531,12 +540,12 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while((nextLine = reader.readNext())!= null) {
-                writer.write("[ a " + TAG_Semangit + "github_project_join_event;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_join_event") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_project_join_event_created_at \"" + nextLine[2] + "\" ] ");
-                writer.write(TAG_Semangit + "github_project_joining_user " + TAG_Semangit + TAG_Userprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_project_join_event_created_at") + " \"" + nextLine[2] + "\" ] ");
+                writer.write(getPrefix(TAG_Semangit + "github_project_joining_user") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_project_joined " + TAG_Semangit + TAG_Repoprefix + nextLine[0] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_project_joined") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -566,40 +575,40 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(TAG_Semangit + TAG_Repoprefix + nextLine[0] + " a " + TAG_Semangit + "github_project ;");
+                writer.write(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0] + " a " + getPrefix(TAG_Semangit + "github_project") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "repository_url \"" + nextLine[1] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "repository_url") + " \"" + nextLine[1] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_has_owner " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_has_owner") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_project_name \"" + nextLine[3] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "github_project_name") + " \"" + nextLine[3] + "\";");
                 writer.newLine();
                 if(!nextLine[4].equals("")) {
 
-                    writer.write(TAG_Semangit + "github_project_description \"" + nextLine[4] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_project_description") + " \"" + nextLine[4] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[5].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "repository_language \"" + nextLine[5] + "\";"); //TODO! Programming language is not a string!
+                    writer.write(getPrefix(TAG_Semangit + "repository_language") + " \"" + nextLine[5] + "\";"); //TODO! Programming language is not a string!
                     writer.newLine();
                 }
                 if(!nextLine[7].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_forked_from " + TAG_Semangit + TAG_Repoprefix + nextLine[7] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "github_forked_from") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[7] + ";");
                     writer.newLine();
                 }
                 if(nextLine[8].equals("1"))
                 {
-                    writer.write(TAG_Semangit + "github_project_deleted 1;");
+                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " 1;");
                     writer.newLine();
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + "github_project_deleted 0;");
+                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " 0;");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "repository_created_at \"" + nextLine[6] + "\".");
+                writer.write(getPrefix(TAG_Semangit + "repository_created_at") + " \"" + nextLine[6] + "\".");
                 writer.newLine();
             }
             writer.close();
@@ -629,11 +638,11 @@ public class MainClass implements Runnable {
             while ((nextLine = reader.readNext()) != null) {
                 if(abbreviated)
                 {
-                    writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1]);
+                    writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]);
                 }
                 else
                 {
-                    writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commitprefix + curLine[1]);
+                    writer.write(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]);
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
@@ -651,11 +660,11 @@ public class MainClass implements Runnable {
             //handle last line of file
             if(abbreviated)
             {
-                writer.write(TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
+                writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + ".");
             }
             else
             {
-                writer.write(TAG_Semangit + TAG_Pullrequestprefix + curLine[0] + " " + TAG_Semangit + "pull_request_has_commit " + TAG_Semangit + TAG_Commitprefix + curLine[1] + ".");
+                writer.write(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0] + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1] + ".");
             }
             writer.close();
         } catch (Exception e) {
@@ -676,20 +685,20 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while ((nextLine = reader.readNext()) != null) {
-                writer.write("[ a " + TAG_Semangit + "github_pull_request_action ;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_pull_request_action") + " ;");
                 writer.newLine();
                 //id, PR id, created at, action, actor
-                writer.write(TAG_Semangit + "github_pull_request_action_created_at \"" + nextLine[2] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_created_at") + " \"" + nextLine[2] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_pull_request_action_id " + nextLine[0] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_id") + " " + nextLine[0] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_pull_request_action_type \"" + nextLine[3] + "\" ] ");
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_type") + " \"" + nextLine[3] + "\" ] ");
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_pull_request_actor " + TAG_Semangit + TAG_Userprefix + nextLine[4] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_actor") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[4] + ";");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_pull_request_action_pull_request " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[1] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_pull_request") + " " + getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[1] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -713,19 +722,19 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while ((nextLine = reader.readNext()) != null) {
-                writer.write(TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + " a " + TAG_Semangit + "github_pull_request;");
+                writer.write(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0] + " a " + getPrefix(TAG_Semangit + "github_pull_request") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "pull_request_base_project " + TAG_Semangit + TAG_Repoprefix + nextLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "pull_request_base_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[2] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "pull_request_head_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "pull_request_head_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "pull_request_base_commit " + TAG_Semangit + TAG_Commitprefix + nextLine[4] + ";");
+                writer.write(getPrefix(TAG_Semangit + "pull_request_base_commit") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[4] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "pull_request_head_commit " + TAG_Semangit + TAG_Commitprefix + nextLine[3] + ";");
+                writer.write(getPrefix(TAG_Semangit + "pull_request_head_commit") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[3] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_pull_request_id " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_pull_request_intra_branch " + nextLine[6] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_pull_request_intra_branch") + " " + nextLine[6] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -752,11 +761,11 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(TAG_Semangit + TAG_Repolabelprefix + nextLine[0] + " a " + TAG_Semangit + "github_repo_label ;");
+                writer.write(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + nextLine[0] + " a " + getPrefix(TAG_Semangit + "github_repo_label") + " ;");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_repo_label_project " + TAG_Semangit + TAG_Repoprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_repo_label_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_repo_label_name \"" + nextLine[2] + "\".");
+                writer.write(getPrefix(TAG_Semangit + "github_repo_label_name") + " \"" + nextLine[2] + "\".");
                 writer.newLine();
             }
             writer.close();
@@ -817,40 +826,40 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                String userURI = TAG_Semangit  + TAG_Userprefix + nextLine[0];
-                writer.write(userURI + " a " + TAG_Semangit + "github_user ;");
+                String userURI = getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0];
+                writer.write(userURI + " a " + getPrefix(TAG_Semangit + "github_user") + " ;");
                 writer.newLine();
                 if(!nextLine[1].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_login " + "\"" + nextLine[1] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_login") + " \"" + nextLine[1] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[2].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_name " + "\"" + nextLine[2] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_name") + " \"" + nextLine[2] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[3].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_company " + "\"" + nextLine[3] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_company") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "github_user_location " + "\"" + nextLine[4] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "github_user_location") + " \"" + nextLine[4] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[5].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "user_email " + "\"" + nextLine[5] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "user_email") + " \"" + nextLine[5] + "\";");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_user_created_at " + "\"" + nextLine[6] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "github_user_created_at") + " \"" + nextLine[6] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_user_is_org ");
+                writer.write(getPrefix(TAG_Semangit + "github_user_is_org") + " ");
                 if(nextLine[7].equals("USR"))
                 {
-                    writer.write("false ;");
+                    writer.write("false ;"); //TODO!!! Other booleans are 0 or 1, not false / true
                     writer.newLine();
                 }
                 else
@@ -858,7 +867,7 @@ public class MainClass implements Runnable {
                     writer.write("true ;");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_user_deleted ");
+                writer.write(getPrefix(TAG_Semangit + "github_user_deleted") + " ");
                 if(nextLine[8].equals("0"))
                 {
                     writer.write("false ;");
@@ -869,7 +878,7 @@ public class MainClass implements Runnable {
                     writer.write("true ;");
                     writer.newLine();
                 }
-                writer.write(TAG_Semangit + "github_user_fake ");
+                writer.write(getPrefix(TAG_Semangit + "github_user_fake") + " ");
                 if(nextLine[9].equals("0"))
                 {
                     writer.write("false .");
@@ -904,13 +913,13 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             while((nextLine = reader.readNext())!= null) {
-                writer.write("[ a " + TAG_Semangit + "github_follow_event;");
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_following_since \"" + nextLine[2] + "\" ;");
+                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\" ;");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_user_or_project 1 ] " + TAG_Semangit + "github_follower " + TAG_Semangit  + TAG_Userprefix + nextLine[1] + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " 1 ] " + getPrefix(TAG_Semangit + "github_follower") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "github_follows " + TAG_Semangit  + TAG_Repoprefix + nextLine[0] + ".");
+                writer.write(getPrefix(TAG_Semangit + "github_follows") + " " + getPrefix(TAG_Semangit  + TAG_Repoprefix) + nextLine[0] + ".");
                 writer.newLine();
             }
             writer.close();
@@ -947,32 +956,32 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(TAG_Semangit + TAG_Commentprefix + "commit_" + nextLine[0] + " a " + TAG_Semangit + "comment;");
+                writer.write(getPrefix(TAG_Semangit + TAG_Commentprefix + "commit_") + nextLine[0] + " a " + getPrefix(TAG_Semangit + "comment") + ";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Commitprefix + nextLine[1] + ";"); //comment for a commit
+                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1] + ";"); //comment for a commit
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[2] + ";");
+                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2] + ";");
                 writer.newLine();
                 if(!nextLine[3].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "comment_body \"" + nextLine[3] + "\";");
+                    writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
 
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "comment_line " + nextLine[4] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "comment_line") + " " + nextLine[4] + ";");
                     writer.newLine();
                 }
 
                 if(!nextLine[5].equals("N"))
                 {
-                    writer.write(TAG_Semangit + "comment_pos " + nextLine[5] + ";");
+                    writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[5] + ";");
                     writer.newLine();
                 }
 
 
-                writer.write(TAG_Semangit + "comment_created_at \"" + nextLine[7] + "\".");
+                writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
                 writer.newLine();
             }
             writer.close();
@@ -1001,11 +1010,11 @@ public class MainClass implements Runnable {
                 }*/
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[3] + "\";");
+                writer.write("[" + getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Issueprefix + nextLine[0] + ";"); //comment for an issue
+                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0] + ";"); //comment for an issue
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
+                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1] + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
                 writer.newLine();
             }
             writer.close();
@@ -1035,20 +1044,20 @@ public class MainClass implements Runnable {
                 }
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + TAG_Semangit + "comment_created_at \"" + nextLine[6] + "\";");
+                writer.write("[" + getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
                 writer.newLine();
-                writer.write(TAG_Semangit + "comment_for " + TAG_Semangit + TAG_Pullrequestprefix + nextLine[0] + ","); //comment for a pull request
+                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0] + ","); //comment for a pull request
                 writer.newLine();
-                writer.write(TAG_Semangit + TAG_Commitprefix + nextLine[5] + ";");
-                writer.newLine();
-
-                writer.write(TAG_Semangit + "comment_pos " + nextLine[3] + ";");
-                writer.newLine();
-                writer.write(TAG_Semangit + "comment_body \"" + nextLine[4] + "\";");
+                writer.write(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5] + ";");
                 writer.newLine();
 
+                writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
+                writer.newLine();
+                writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
+                writer.newLine();
 
-                writer.write(TAG_Semangit + "comment_author " + TAG_Semangit + TAG_Userprefix + nextLine[1] + "] a " + TAG_Semangit + "comment.");
+
+                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1] + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
                 writer.newLine();
                 //comment for [0]
             }
@@ -1069,8 +1078,28 @@ public class MainClass implements Runnable {
 
     private static void appendFileToOutput(String directory, String fileName)
     {
-
         String outPath = directory.concat("combined.ttl");
+        File index = new File(outPath);
+        if(!index.exists())
+        {
+//            System.out.println("Index doesnt exist");
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(outPath), 32768);
+                final Set<Map.Entry<String, String>> entries = prefixTable.entrySet();
+                for(Map.Entry<String, String> entry : entries)
+                {
+//                    System.out.println();
+                    writer.write("@prefix " + entry.getValue() + ": <http://semangit.com/ontology/" + entry.getKey() + "#>.");
+                    writer.newLine();
+                }
+                writer.close();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
         try(BufferedReader br = new BufferedReader(new FileReader(directory.concat(fileName)))) {
             Writer output = new BufferedWriter(new FileWriter(outPath, true));
             for(String line; (line = br.readLine()) != null; ) {
@@ -1129,77 +1158,77 @@ public class MainClass implements Runnable {
 
     public static void main(String[] args)
     {
-        File index = new File(args[0] + "rdf");
-        if(index.exists())
-        {
-            System.out.println("rdf/ already exists. Deleting!");
-            String[] entries = index.list();
-            if(entries != null)
+        try {
+            File index = new File(args[0] + "rdf");
+            if(index.exists())
             {
-                for(String s : entries)
+                System.out.println("rdf/ already exists. Deleting!");
+                String[] entries = index.list();
+                if(entries != null)
                 {
-                    File currentFile = new File(index.getPath(), s);
-                    if(!currentFile.delete())
+                    for(String s : entries)
                     {
-                        System.out.println("Failed to delete existing file: " + index.getPath() + s);
-                        System.exit(1);
+                        File currentFile = new File(index.getPath(), s);
+                        if(!currentFile.delete())
+                        {
+                            System.out.println("Failed to delete existing file: " + index.getPath() + s);
+                            System.exit(1);
+                        }
                     }
                 }
+                if(!index.delete())
+                {
+                    System.out.println("Unable to delete rdf/ directory after deleting all entries.");
+                    System.exit(1);
+                }
             }
-            if(!index.delete())
+            if(!index.mkdirs())
             {
-                System.out.println("Unable to delete rdf/ directory after deleting all entries.");
+                System.out.println("Unable to create " + args[0] + "rdf/ directory. Exiting.");
                 System.exit(1);
             }
-        }
-        if(!index.mkdirs())
-        {
-            System.out.println("Unable to create " + args[0] + "rdf/ directory. Exiting.");
-            System.exit(1);
-        }
 
-        //(new Thread(new MainClass("organization_members", args[0], true)));
+            initPrefixTable();
 
+            ArrayList<Thread> processes = new ArrayList<>();
+            processes.add(new Thread(new MainClass("commit_comments", args[0], true)));
+            processes.add(new Thread(new MainClass("commit_parents", args[0], false)));
+            processes.add(new Thread(new MainClass("commits", args[0], false)));
+            processes.add(new Thread(new MainClass("followers", args[0], false)));
+            processes.add(new Thread(new MainClass("issue_comments", args[0], false)));
+            processes.add(new Thread(new MainClass("issue_events", args[0], false)));
+            processes.add(new Thread(new MainClass("issue_labels", args[0], false)));
+            processes.add(new Thread(new MainClass("issues", args[0], false)));
+            processes.add(new Thread(new MainClass("organization_members", args[0], false)));
+            processes.add(new Thread(new MainClass("project_commits", args[0], false)));
+            processes.add(new Thread(new MainClass("project_members", args[0], false)));
+            processes.add(new Thread(new MainClass("projects", args[0], false)));
+            processes.add(new Thread(new MainClass("pull_request_comments", args[0], false)));
+            processes.add(new Thread(new MainClass("pull_request_commits", args[0], false)));
+            processes.add(new Thread(new MainClass("pull_request_history", args[0], false)));
+            processes.add(new Thread(new MainClass("pull_requests", args[0], false)));
+            processes.add(new Thread(new MainClass("users", args[0], false)));
+            processes.add(new Thread(new MainClass("repo_labels", args[0], false)));
+            processes.add(new Thread(new MainClass("repo_milestones", args[0], false)));
+            processes.add(new Thread(new MainClass("watchers", args[0], false)));
 
-        ArrayList<Thread> processes = new ArrayList<>();
-        processes.add(new Thread(new MainClass("commit_comments", args[0], true)));
-        processes.add(new Thread(new MainClass("commit_parents", args[0], false)));
-        processes.add(new Thread(new MainClass("commits", args[0], false)));
-        processes.add(new Thread(new MainClass("followers", args[0], false)));
-        processes.add(new Thread(new MainClass("issue_comments", args[0], false)));
-        processes.add(new Thread(new MainClass("issue_events", args[0], false)));
-        processes.add(new Thread(new MainClass("issue_labels", args[0], false)));
-        processes.add(new Thread(new MainClass("issues", args[0], false)));
-        processes.add(new Thread(new MainClass("organization_members", args[0], false)));
-        processes.add(new Thread(new MainClass("project_commits", args[0], false)));
-        processes.add(new Thread(new MainClass("project_members", args[0], false)));
-        processes.add(new Thread(new MainClass("projects", args[0], false)));
-        processes.add(new Thread(new MainClass("pull_request_comments", args[0], false)));
-        processes.add(new Thread(new MainClass("pull_request_commits", args[0], false)));
-        processes.add(new Thread(new MainClass("pull_request_history", args[0], false)));
-        processes.add(new Thread(new MainClass("pull_requests", args[0], false)));
-        processes.add(new Thread(new MainClass("users", args[0], false)));
-        processes.add(new Thread(new MainClass("repo_labels", args[0], false)));
-        processes.add(new Thread(new MainClass("repo_milestones", args[0], false)));
-        processes.add(new Thread(new MainClass("watchers", args[0], false)));
-
-        for(Thread p: processes)
-        {
-            p.start();
-        }
-        for(Thread p: processes)
-        {
-            try {
-                p.join();
-            }
-            catch (InterruptedException e)
+            for(Thread p: processes)
             {
-                e.printStackTrace();
-                System.exit(1);
+                p.start();
             }
-        }
+            for(Thread p: processes)
+            {
+                try {
+                    p.join();
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            }
 
-        try {
+
             String correctPath = args[0].concat("rdf/");
             appendFileToOutput(correctPath, "commit_comments.ttl");
             appendFileToOutput(correctPath, "commits.ttl");
