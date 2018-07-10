@@ -411,7 +411,7 @@ public class MainClass implements Runnable {
                     continue;
                 }
                 String issueURL = getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[7];
-                writer.write( issueURL + " a " + TAG_Semangit + "github_issue;");
+                writer.write( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1] + ";");
                 writer.newLine();
