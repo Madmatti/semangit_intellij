@@ -432,7 +432,26 @@ public class MainClass implements Runnable {
                 curLine = nextLine;
 
             }
-            //TODO: Handle last line!!!
+            //Handle last line
+            String issueURL = getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[7];
+            writer.write( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
+            writer.newLine();
+            writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1] + ";");
+            writer.newLine();
+            writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2] + ";");
+            writer.newLine();
+            if(!curLine[3].equals("N"))
+            {
+                writer.write(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3] + ";");
+                writer.newLine();
+            }
+            if(!curLine[5].equals("N"))
+            {
+                writer.write(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5] + ";");
+                writer.newLine();
+            }
+            writer.write(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
+            writer.newLine();
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
