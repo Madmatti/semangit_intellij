@@ -19,7 +19,7 @@ public class MainClass implements Runnable {
     private static final String TAG_Repolabelprefix = "ghlb_";
 
     private static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
-
+    private static int errorCtr = 0;
 
     private static final Map<String, String> prefixTable = new HashMap<>();
     private static void initPrefixTable()
@@ -194,18 +194,24 @@ public class MainClass implements Runnable {
         // base64 on ID only
         // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
         StringBuilder sb = new StringBuilder();
+        try {
+            String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+            String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
 
-        String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-        String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
-
-        int in = Integer.parseInt(rightOfComma);
-        Integer j = (int)Math.ceil(Math.log(in)/Math.log(alphabet64.length()));
-        for(int i = 0; i < j; i++){
-            sb.append(alphabet64.charAt(in%alphabet64.length()));
-            in /= alphabet64.length();
+            int in = Integer.parseInt(rightOfComma);
+            Integer j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
+            for (int i = 0; i < j; i++) {
+                sb.append(alphabet64.charAt(in % alphabet64.length()));
+                in /= alphabet64.length();
+            }
+            return leftOfComma + sb.toString();
         }
-        return leftOfComma + sb.toString();
-        
+        catch (Exception e)
+        {
+            errorCtr++;
+            e.printStackTrace();
+            return input;
+        }
     }
 
     private static void parseCommitParents(String path) {
@@ -1249,6 +1255,11 @@ public class MainClass implements Runnable {
         }
         catch (Exception e) {
             e.printStackTrace();
+            System.exit(1);
+        }
+        if(errorCtr != 0)
+        {
+            System.out.println("A total of " + errorCtr + " errors occurred.");
             System.exit(1);
         }
         System.exit(0);
