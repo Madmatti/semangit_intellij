@@ -18,6 +18,9 @@ public class MainClass implements Runnable {
     private static final String TAG_Pullrequestprefix = "ghpr_";
     private static final String TAG_Repolabelprefix = "ghlb_";
 
+    static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
+
+
     private static final Map<String, String> prefixTable = new HashMap<>();
     private static void initPrefixTable()
     {
@@ -161,37 +164,45 @@ public class MainClass implements Runnable {
             System.out.println("Prefix for " + s + " missing.");
         }
         return prefixTable.get(s) + ":";
+
+        //return s;
     }
 
     private static String b64(String input)
     {
-        /* base36 attempt on the ID only (not prefix)
-        String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+        //base32 attempt on the ID only (not prefix)
+        /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+        String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
+        return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 32);
+        */
+
+        //base36 attempt on the ID only (not prefix)
+        /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
         String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
         return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 36);
+        */
+
+        //base16 attempt on the ID only (not prefix)
+        /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+        String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
+        return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 16);
         */
 
         //no conversion
         //return input;
 
-        //base64 on input bytes attempt (BAD!)
-        //Base64.Encoder enc = java.util.Base64.getUrlEncoder().withoutPadding();
-        //return enc.encodeToString(input.getBytes());
-
-
-        // base62 on ID only
+        // base64 on ID only
         // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
-        String alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         StringBuilder sb = new StringBuilder();
 
         String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
         String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
 
         int in = Integer.parseInt(rightOfComma);
-        Integer j = (int)Math.ceil(Math.log(in)/Math.log(alphabet.length()));
+        Integer j = (int)Math.ceil(Math.log(in)/Math.log(alphabet64.length()));
         for(int i = 0; i < j; i++){
-            sb.append(alphabet.charAt(in%alphabet.length()));
-            in /= alphabet.length();
+            sb.append(alphabet64.charAt(in%alphabet64.length()));
+            in /= alphabet64.length();
         }
         return leftOfComma + sb.toString();
 
@@ -258,8 +269,10 @@ public class MainClass implements Runnable {
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "commit_committed_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[3]) + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "commit_repository") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[4]) + ";");
-                writer.newLine();
+                if(!nextLine[4].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "commit_repository") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[4]) + ";");
+                    writer.newLine();
+                }
                 writer.write(getPrefix(TAG_Semangit + "commit_created_at") + " \"" + nextLine[5] + "\".");
                 writer.newLine();
             }
@@ -686,8 +699,10 @@ public class MainClass implements Runnable {
                     writer.write(getPrefix(TAG_Semangit + "github_pull_request_actor") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[4]) + ";");
                     writer.newLine();
                 }
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[1]) + ".");
-                writer.newLine();
+                if(!nextLine[1].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[1]) + ".");
+                    writer.newLine();
+                }
             }
             writer.close();
         } catch (Exception e) {
@@ -708,16 +723,26 @@ public class MainClass implements Runnable {
             while ((nextLine = reader.readNext()) != null) {
                 writer.write(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_pull_request") + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "pull_request_base_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[2]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "pull_request_head_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "pull_request_base_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[4]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "pull_request_head_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[3]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
-                writer.newLine();
+                if(!nextLine[2].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "pull_request_base_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[2]) + ";");
+                    writer.newLine();
+                }
+                if(!nextLine[1].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "pull_request_head_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
+                    writer.newLine();
+                }
+                if(!nextLine[4].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "pull_request_base_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[4]) + ";");
+                    writer.newLine();
+                }
+                if(!nextLine[3].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "pull_request_head_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[3]) + ";");
+                    writer.newLine();
+                }
+                if(!nextLine[5].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
+                    writer.newLine();
+                }
                 writer.write(getPrefix(TAG_Semangit + "github_pull_request_intra_branch") + " ");
                 if(nextLine[6].equals("0"))
                 {
@@ -1053,7 +1078,7 @@ public class MainClass implements Runnable {
                 for(Map.Entry<String, String> entry : entries)
                 {
 //                    System.out.println();
-                    writer.write("@prefix " + entry.getValue() + ": <http://semangit.com/ontology/" + entry.getKey() + "#>.");
+                    writer.write("@prefix " + entry.getValue() + ": <http://semangit.de/ontology/" + entry.getKey() + "#>.");
                     writer.newLine();
                 }
                 writer.close();
