@@ -18,7 +18,7 @@ public class MainClass implements Runnable {
     private static final String TAG_Pullrequestprefix = "ghpr_";
     private static final String TAG_Repolabelprefix = "ghlb_";
 
-    static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
+    private static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
 
 
     private static final Map<String, String> prefixTable = new HashMap<>();
@@ -205,7 +205,7 @@ public class MainClass implements Runnable {
             in /= alphabet64.length();
         }
         return leftOfComma + sb.toString();
-
+        
     }
 
     private static void parseCommitParents(String path) {
