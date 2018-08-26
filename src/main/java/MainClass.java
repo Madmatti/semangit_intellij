@@ -159,13 +159,13 @@ public class MainClass implements Runnable {
 
     private static String getPrefix(String s)
     {
-        if(prefixTable.get(s) == null)
+        /*if(prefixTable.get(s) == null)
         {
             System.out.println("Prefix for " + s + " missing.");
         }
         return prefixTable.get(s) + ":";
-
-        //return s;
+        */
+        return s;
     }
 
     private static String b64(String input)
@@ -189,11 +189,11 @@ public class MainClass implements Runnable {
         */
 
         //no conversion
-        //return input;
+        return input;
 
         // base64 on ID only
         // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
-        StringBuilder sb = new StringBuilder();
+        /*StringBuilder sb = new StringBuilder();
         try {
             String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
             String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
@@ -212,6 +212,7 @@ public class MainClass implements Runnable {
             e.printStackTrace();
             return input;
         }
+        */
     }
 
     private static void parseCommitParents(String path) {
@@ -983,7 +984,7 @@ public class MainClass implements Runnable {
                     writer.newLine();
                 }
 
-                if(nextLine.length >= 7) {
+                if(nextLine.length > 7) {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
                     writer.newLine();
                 }
@@ -1012,7 +1013,7 @@ public class MainClass implements Runnable {
                 //TODO: Let's verify the integrity of the RDF output of this
                 writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
                 writer.newLine();
-                if(nextLine.length >= 3) {
+                if(nextLine.length > 3) {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
@@ -1044,11 +1045,11 @@ public class MainClass implements Runnable {
                 //TODO: Let's verify the integrity of the RDF output of this
                 writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + ","); //comment for a pull request
                 writer.newLine();
-                if(nextLine.length >= 5) {
+                if(nextLine.length > 5) {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
                     writer.newLine();
                 }
-                if(nextLine.length <= 6) { //fixes a crash
+                if(nextLine.length > 6) { //fixes a crash
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
                     writer.newLine();
                 }
