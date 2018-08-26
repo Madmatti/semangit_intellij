@@ -21,6 +21,9 @@ public class MainClass implements Runnable {
     private static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
     private static int errorCtr = 0;
 
+    private static boolean prefixing = true; //default: use prefixing
+    private static int mode = 0; //default: 0 = base64, 1 = base32, 2 = base16, 3 = base10
+
     private static final Map<String, String> prefixTable = new HashMap<>();
     private static void initPrefixTable()
     {
@@ -159,60 +162,62 @@ public class MainClass implements Runnable {
 
     private static String getPrefix(String s)
     {
-        if(prefixTable.get(s) == null)
-        {
-            System.out.println("Prefix for " + s + " missing.");
+        if(prefixing) {
+            if (prefixTable.get(s) == null) {
+                System.out.println("Prefix for " + s + " missing.");
+            }
+            return prefixTable.get(s) + ":";
         }
-        return prefixTable.get(s) + ":";
-
-        //return s;
+        else {
+            return s;
+        }
     }
 
     private static String b64(String input)
     {
+        if(mode == 0) {
+            // base64 on ID only
+            // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
+            StringBuilder sb = new StringBuilder();
+            try {
+                String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+                String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
+
+                int in = Integer.parseInt(rightOfComma);
+                Integer j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
+                for (int i = 0; i < j; i++) {
+                    sb.append(alphabet64.charAt(in % alphabet64.length()));
+                    in /= alphabet64.length();
+                }
+                return leftOfComma + sb.toString();
+            } catch (Exception e) {
+                errorCtr++;
+                e.printStackTrace();
+                return input;
+            }
+        }
         //base32 attempt on the ID only (not prefix)
-        /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-        String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
-        return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 32);
-        */
+        else if(mode == 1) {
+            String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+            String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
+            return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 32);
+        }
 
         //base36 attempt on the ID only (not prefix)
         /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
         String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
         return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 36);
         */
-
-        //base16 attempt on the ID only (not prefix)
-        /*String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-        String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
-        return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 16);
-        */
-
-        //no conversion
-        //return input;
-
-        // base64 on ID only
-        // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
-        StringBuilder sb = new StringBuilder();
-        try {
+        else if (mode == 2) {
+            //base16 attempt on the ID only (not prefix)
             String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
             String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
-
-            int in = Integer.parseInt(rightOfComma);
-            Integer j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
-            for (int i = 0; i < j; i++) {
-                sb.append(alphabet64.charAt(in % alphabet64.length()));
-                in /= alphabet64.length();
-            }
-            return leftOfComma + sb.toString();
+            return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 16);
         }
-        catch (Exception e)
-        {
-            errorCtr++;
-            e.printStackTrace();
+        else {
+            //no conversion
             return input;
         }
-        
     }
 
     private static void parseCommitParents(String path) {
@@ -1059,6 +1064,15 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
+                if(nextLine.length != 7)
+                {
+                    System.out.println("Malformed input given to parsePullRequestComments. Now printing values: ");
+                    for(int i = 0; i < nextLine.length; i++)
+                    {
+                        System.out.println(nextLine[i]);
+                    }
+                    System.out.println("End of print. Now trying to handle this.");
+                }
 
                 //TODO: Let's verify the integrity of the RDF output of this
                 if(!nextLine[0].equals("")) {
@@ -1200,6 +1214,53 @@ public class MainClass implements Runnable {
 
     public static void main(String[] args)
     {
+        if(args.length > 1)
+        {
+            //mode, prefixing
+            for(String s: args)
+            {
+                if(s.equals("-noprefix"))
+                {
+                    System.out.println("Prefixing disabled! Large output expected...");
+                    prefixing = false;
+                }
+                if(s.contains("-base="))
+                {
+                    String rightOfEql = s.substring(s.lastIndexOf("=") + 1);
+                    int in = Integer.parseInt(rightOfEql);
+                    if(in == 64)
+                    {
+                        System.out.println("Using Base64URL representation for integers.");
+                        mode = 0;
+                    }
+                    else if(in == 32)
+                    {
+                        System.out.println("Using Base32 representation for integers.");
+                        mode = 1;
+                    }
+                    else if(in == 16)
+                    {
+                        System.out.println("Using Base16 representation for integers.");
+                        mode = 2;
+                    }
+                    else if(in == 10)
+                    {
+                        System.out.println("Using Base10 representation for integers.");
+                        mode = 3;
+                    }
+                    else
+                    {
+                        System.out.println("Unknown base passed as argument. Using Base64URL representation for integers.");
+                        mode = 0;
+                    }
+                }
+            }
+            if(!prefixing && (mode != 3))
+            {
+                System.out.println("No Prefixing option is only available for base10. Setting base to 10.");
+                mode = 3;
+            }
+        }
         try {
             File index = new File(args[0] + "rdf");
             //will take care of the deletion via bash
