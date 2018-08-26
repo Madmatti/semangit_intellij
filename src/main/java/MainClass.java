@@ -159,13 +159,13 @@ public class MainClass implements Runnable {
 
     private static String getPrefix(String s)
     {
-        /*if(prefixTable.get(s) == null)
+        if(prefixTable.get(s) == null)
         {
             System.out.println("Prefix for " + s + " missing.");
         }
         return prefixTable.get(s) + ":";
-        */
-        return s;
+
+        //return s;
     }
 
     private static String b64(String input)
@@ -189,11 +189,11 @@ public class MainClass implements Runnable {
         */
 
         //no conversion
-        return input;
+        //return input;
 
         // base64 on ID only
         // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
-        /*StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         try {
             String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
             String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
@@ -212,7 +212,7 @@ public class MainClass implements Runnable {
             e.printStackTrace();
             return input;
         }
-        */
+        
     }
 
     private static void parseCommitParents(String path) {
@@ -962,23 +962,27 @@ public class MainClass implements Runnable {
                 }
                 writer.write(b64(getPrefix(TAG_Semangit + TAG_Commentprefix + "commit_") + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "comment") + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1]) + ";"); //comment for a commit
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
-                writer.newLine();
-                if(!nextLine[3].equals("N"))
+                if(nextLine.length > 1 && !nextLine[1].equals("N") && !nextLine[1].equals("")){
+                    writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1]) + ";"); //comment for a commit
+                    writer.newLine();
+                }
+                if(nextLine.length > 2 && !nextLine[2].equals("N") && !nextLine[2].equals("")) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
+                    writer.newLine();
+                }
+                if(nextLine.length > 3 && !nextLine[3].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
 
-                if(!nextLine[4].equals("N"))
+                if(nextLine.length > 4 && !nextLine[4].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_line") + " " + nextLine[4] + ";");
                     writer.newLine();
                 }
 
-                if(!nextLine[5].equals("N"))
+                if(nextLine.length > 5 && !nextLine[5].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[5] + ";");
                     writer.newLine();
@@ -986,6 +990,12 @@ public class MainClass implements Runnable {
 
                 if(nextLine.length > 7) {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
+                    writer.newLine();
+                }
+                else
+                {
+                    System.out.println("Missing comment_created_at in parseCommitComments. Using 0 value instead.");
+                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"0000-00-00 00:00:00\".");
                     writer.newLine();
                 }
             }
@@ -1017,8 +1027,16 @@ public class MainClass implements Runnable {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
-                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
-                writer.newLine();
+                if(nextLine.length > 1 && !nextLine[1].equals("") && !nextLine[1].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
+                    writer.newLine();
+                }
+                else
+                {
+                    System.out.println("Warning! Invalid user found in parseIssueComments. Using MAX_INT as userID.");
+                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
+                    writer.newLine();
+                }
             }
             writer.close();
         }
@@ -1043,8 +1061,22 @@ public class MainClass implements Runnable {
                 }
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + ","); //comment for a pull request
-                writer.newLine();
+                if(!nextLine[0].equals("")) {
+                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0])); //comment for a pull request
+                    if(nextLine.length > 5)
+                    {
+                        writer.write(",");
+                    }
+                    else
+                    {
+                        writer.write(";");
+                    }
+                    writer.newLine();
+                }
+                else
+                {
+                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " ");
+                }
                 if(nextLine.length > 5) {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
                     writer.newLine();
@@ -1053,15 +1085,24 @@ public class MainClass implements Runnable {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
                     writer.newLine();
                 }
-                writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
-                writer.newLine();
-
-
-                writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
-                writer.newLine();
-                //comment for [0]
+                if(nextLine.length > 3) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
+                    writer.newLine();
+                }
+                if(nextLine.length > 4) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
+                    writer.newLine();
+                }
+                if(nextLine.length > 1 && !nextLine[1].equals("") && !nextLine[1].equals("N")) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
+                    writer.newLine();
+                }
+                else
+                {
+                    System.out.println("Warning! Invalid user found in parsePullRequestComments. Using MAX_INT as userID.");
+                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
+                    writer.newLine();
+                }
             }
             writer.close();
         }
