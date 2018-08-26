@@ -983,9 +983,10 @@ public class MainClass implements Runnable {
                     writer.newLine();
                 }
 
-
-                writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
-                writer.newLine();
+                if(nextLine.length >= 7) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
+                    writer.newLine();
+                }
             }
             writer.close();
         }
@@ -1009,10 +1010,12 @@ public class MainClass implements Runnable {
                 }*/
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
+                writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
-                writer.newLine();
+                if(nextLine.length >= 3) {
+                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
+                    writer.newLine();
+                }
                 writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
                 writer.newLine();
             }
@@ -1039,13 +1042,16 @@ public class MainClass implements Runnable {
                 }
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
+                writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + ","); //comment for a pull request
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + ","); //comment for a pull request
-                writer.newLine();
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
-                writer.newLine();
-
+                if(nextLine.length >= 5) {
+                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
+                    writer.newLine();
+                }
+                if(nextLine.length <= 6) { //fixes a crash
+                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
+                    writer.newLine();
+                }
                 writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
