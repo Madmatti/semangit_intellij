@@ -18,7 +18,6 @@ public class MainClass implements Runnable {
     private static final String TAG_Pullrequestprefix = "ghpr_";
     private static final String TAG_Repolabelprefix = "ghlb_";
 
-    private static String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
     private static int errorCtr = 0;
 
     private static boolean prefixing = true; //default: use prefixing
@@ -157,7 +156,6 @@ public class MainClass implements Runnable {
         prefixTable.put(, "cj");
         prefixTable.put(, "ck");*/
 
-        //TODO: Repo Milestones...
     }
 
     private static String getPrefix(String s)
@@ -176,6 +174,7 @@ public class MainClass implements Runnable {
     private static String b64(String input)
     {
         if(mode == 0) {
+            String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-";
             // base64 on ID only
             // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
             StringBuilder sb = new StringBuilder();
@@ -624,7 +623,7 @@ public class MainClass implements Runnable {
                 }
                 if(!nextLine[5].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "repository_language") + " \"" + nextLine[5] + "\";"); //TODO! Programming language is not a string!
+                    writer.write(getPrefix(TAG_Semangit + "repository_language") + " \"" + nextLine[5] + "\";");
                     writer.newLine();
                 }
                 if(!nextLine[7].equals("N"))
@@ -765,7 +764,7 @@ public class MainClass implements Runnable {
                     writer.newLine();
                 }
                 if(!nextLine[5].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";"); //TODO: ^^xsd:int?!
+                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";");
                     writer.newLine();
                 }
                 writer.write(getPrefix(TAG_Semangit + "github_pull_request_intra_branch") + " ");
@@ -829,7 +828,7 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                //TODO! repo_milestones is empty in oldest dump! Cannot convert without data...
+                //TODO! repo_milestones is empty in all dumps?! Cannot convert without data...
             }
             writer.close();
         }
@@ -1080,9 +1079,9 @@ public class MainClass implements Runnable {
                 if(nextLine.length != 7)
                 {
                     System.out.println("Malformed input given to parsePullRequestComments. Now printing values: ");
-                    for(int i = 0; i < nextLine.length; i++)
+                    for(String s : nextLine)
                     {
-                        System.out.println(nextLine[i]);
+                        System.out.println(s);
                     }
                     System.out.println("End of print. Now trying to handle this.");
                 }
