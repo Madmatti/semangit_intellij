@@ -174,7 +174,6 @@ public class MainClass implements Runnable {
     private static String b64(String input)
     {
         if(mode == 0) {
-            //TODO: add "-" again to alphabet?
             String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"; //can only find 63 ASCII characters that work except for ":", but not sure if that breaks the syntax
             // base64 on ID only
             // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
