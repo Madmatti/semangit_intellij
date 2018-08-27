@@ -198,9 +198,15 @@ public class MainClass implements Runnable {
         }
         //base32 attempt on the ID only (not prefix)
         else if(mode == 1) {
-            String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-            String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
-            return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 32);
+            try {
+                String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+                String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
+                return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 32);
+            } catch (Exception e) {
+                errorCtr++;
+                e.printStackTrace();
+                return input;
+            }
         }
 
         //base36 attempt on the ID only (not prefix)
@@ -208,11 +214,18 @@ public class MainClass implements Runnable {
         String leftOfComma = input.substring(0,input.lastIndexOf(":") + 1);
         return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 36);
         */
+
         else if (mode == 2) {
             //base16 attempt on the ID only (not prefix)
-            String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-            String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
-            return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 16);
+            try {
+                String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
+                String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
+                return leftOfComma + Integer.toString(Integer.parseInt(rightOfComma), 16);
+            } catch (Exception e) {
+                errorCtr++;
+                e.printStackTrace();
+                return input;
+            }
         }
         else {
             //no conversion
@@ -1311,11 +1324,25 @@ public class MainClass implements Runnable {
             processes.add(new Thread(new MainClass("watchers", args[0])));
             for(Thread t : processes)
             {
-                t.start();
+                try {
+                    t.start();
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    errorCtr++;
+                }
             }
             for (Thread t : processes)
             {
-                t.join();
+                try{
+                    t.join();
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                    errorCtr++;
+                }
             }
 
             String correctPath = args[0].concat("rdf/");
@@ -1369,7 +1396,7 @@ public class MainClass implements Runnable {
         if(errorCtr != 0)
         {
             System.out.println("A total of " + errorCtr + " errors occurred.");
-            System.exit(1);
+            System.exit(2);
         }
         System.exit(0);
     }
