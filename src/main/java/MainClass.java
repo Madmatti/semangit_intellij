@@ -1631,8 +1631,6 @@ public class MainClass implements Runnable {
             System.exit(2);
         }
         System.exit(0);
-
-        //TODO: Some tables were added to GHTorrent. See project_languages, project_topics
-
+        
     }
 }
