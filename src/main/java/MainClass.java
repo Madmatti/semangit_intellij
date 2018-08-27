@@ -17,6 +17,7 @@ public class MainClass implements Runnable {
     private static final String TAG_Issueprefix = "ghissue_";
     private static final String TAG_Pullrequestprefix = "ghpr_";
     private static final String TAG_Repolabelprefix = "ghlb_";
+    private static final String TAG_Langprefix = "ghlang_";
 
     private static int errorCtr = 0;
 
@@ -144,6 +145,26 @@ public class MainClass implements Runnable {
         prefixTable.put(TAG_Semangit + "comment_created_at", "aC");
 
 
+        //languages
+        prefixTable.put(TAG_Semangit + TAG_Langprefix, "aD");
+        prefixTable.put(TAG_Semangit + "github_project_language", "aE");
+        prefixTable.put(TAG_Semangit + "github_project_language_bytes", "aF");
+        prefixTable.put(TAG_Semangit + "github_project_language_timestamp", "aG");
+        prefixTable.put(TAG_Semangit + "github_project_language_repo", "aH");
+        prefixTable.put(TAG_Semangit + "github_project_language_is", "aI");
+        prefixTable.put(TAG_Semangit + "programming_language", "aO");
+        prefixTable.put(TAG_Semangit + "programming_language_name", "aP");
+
+
+
+        //update for users
+        prefixTable.put(TAG_Semangit + "github_user_lat", "aJ");
+        prefixTable.put(TAG_Semangit + "github_user_lng", "aK");
+        prefixTable.put(TAG_Semangit + "github_user_country_code", "aL");
+        prefixTable.put(TAG_Semangit + "github_user_state", "aM");
+        prefixTable.put(TAG_Semangit + "github_user_city", "aN");
+
+
         prefixTable.put(TAG_Semangit + "commit_repository", "q");
 
         //tag "CD" used farther up
@@ -243,6 +264,12 @@ public class MainClass implements Runnable {
             curLine = reader.readNext();
             boolean abbreviated = false;
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 2) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 if (!abbreviated) {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
                 } else {
@@ -259,10 +286,12 @@ public class MainClass implements Runnable {
                 curLine = nextLine;
             }
             //handle last line of file
-            if (!abbreviated) {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
-            } else {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + "."); //only specifying next object. subject/predicate are abbreviated
+            if(curLine.length == 2){
+                if (!abbreviated) {
+                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
+                } else {
+                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + "."); //only specifying next object. subject/predicate are abbreviated
+                }
             }
             writer.close();
         }
@@ -281,6 +310,11 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 6) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 /*for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }*/
@@ -318,9 +352,14 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while((nextLine = reader.readNext())!= null) {
+
+                if(nextLine.length != 3) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\" ;");
+                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " false ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
                 writer.newLine();
@@ -345,6 +384,11 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 6) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 //event id, issue id, actor id, action, action specific sha, created at
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_issue_event") + ";");
                 writer.newLine();
@@ -381,6 +425,12 @@ public class MainClass implements Runnable {
             String[] curLine = reader.readNext();
             boolean abbreviated = false;
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 2) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 if(abbreviated)
                 {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //only print object
@@ -433,6 +483,13 @@ public class MainClass implements Runnable {
                 //SCHEMA WRONG!
                 //Format: id, repo id, reporter id, assignee id, pull request (0/1), pull request id, created at, issue id
                 //WARNING: Duplicates! Everything except for id might be equal?! Example: issue id 1575
+
+
+                if(nextLine.length != 8) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 if(nextLine[7].equals(curLine[7]))
                 {
                     curLine = nextLine;
@@ -496,6 +553,12 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while((nextLine = reader.readNext())!= null) {
+
+                if(nextLine.length != 3) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_organization_join_event") + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_organization_joined_at") + " \"" + nextLine[2] + "\" ] " + getPrefix(TAG_Semangit + "github_organization_joined_by") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
@@ -524,6 +587,13 @@ public class MainClass implements Runnable {
             String[] curLine = reader.readNext();
             boolean abbreviated = false;
             while((nextLine = reader.readNext())!= null) {
+
+
+                if(nextLine.length != 2) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 if(abbreviated) //abbreviated in previous step. Only need to print object now
                 {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1])); //one commit for multiple repositories (branching / merging)
@@ -538,11 +608,12 @@ public class MainClass implements Runnable {
                 if(abbreviated)
                 {
                     writer.write(",");
+                    //no new line to save space
                 }
                 else {
                     writer.write(".");
+                    writer.newLine();
                 }
-                writer.newLine();
             }
 
 
@@ -577,6 +648,12 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while((nextLine = reader.readNext())!= null) {
+
+                if(nextLine.length != 4) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_join_event") + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_project_join_event_created_at") + " \"" + nextLine[2] + "\" ] ");
@@ -605,6 +682,13 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while((nextLine = reader.readNext())!= null) {
+
+
+                if(nextLine.length != 11) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
@@ -633,14 +717,15 @@ public class MainClass implements Runnable {
                 }
                 if(nextLine[8].equals("1"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " true ;");
+                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " true;");
                     writer.newLine();
                 }
                 else
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " false ;");
+                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " false;");
                     writer.newLine();
                 }
+                //Not taking "last update" into account, as we can easily compute that on a graph database
                 writer.write(getPrefix(TAG_Semangit + "repository_created_at") + " \"" + nextLine[6] + "\".");
                 writer.newLine();
             }
@@ -665,6 +750,12 @@ public class MainClass implements Runnable {
             String[] curLine = reader.readNext();
             boolean abbreviated = false;
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 2) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+
                 if(abbreviated)
                 {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
@@ -710,7 +801,11 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while ((nextLine = reader.readNext()) != null) {
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_pull_request_action") + " ;");
+                if(nextLine.length != 5) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_pull_request_action") + ";");
                 writer.newLine();
                 //id, PR id, created at, action, actor
                 writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_created_at") + " \"" + nextLine[2] + "\";");
@@ -745,6 +840,11 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 7) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 writer.write(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_pull_request") + ";");
                 writer.newLine();
                 if(!nextLine[2].equals("N")) {
@@ -775,7 +875,7 @@ public class MainClass implements Runnable {
                 else{
                     writer.write("true");
                 }
-                writer.write(" .");
+                writer.write(".");
                 writer.newLine();
             }
             writer.close();
@@ -795,10 +895,14 @@ public class MainClass implements Runnable {
             
             while((nextLine = reader.readNext())!= null)
             {
+                if(nextLine.length != 3) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_repo_label") + " ;");
+                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_repo_label") + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_repo_label_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
                 writer.newLine();
@@ -852,70 +956,105 @@ public class MainClass implements Runnable {
             
             while((nextLine = reader.readNext())!= null)
             {
+                //13 lines now! The parser won't work on heavily outdated dumps, as the structure was modified at some point!!!
+                if(nextLine.length != 13) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                String userURI = b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0]);
-                writer.write(userURI + " a " + getPrefix(TAG_Semangit + "github_user") + " ;");
+
+                //System.out.println(b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[0]));
+                String userURI = b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[0]);
+                writer.write(userURI + " a " + getPrefix(TAG_Semangit + "github_user") + ";");
                 writer.newLine();
                 if(!nextLine[1].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "github_login") + " \"" + nextLine[1] + "\";");
                     writer.newLine();
                 }
-                if(!nextLine[2].equals("N"))
+                /*if(!nextLine[2].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "github_name") + " \"" + nextLine[2] + "\";");
                     writer.newLine();
+                }*/
+                if(!nextLine[2].equals("N"))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_company") + " \"" + nextLine[2] + "\";");
+                    writer.newLine();
                 }
                 if(!nextLine[3].equals("N"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "github_company") + " \"" + nextLine[3] + "\";");
-                    writer.newLine();
-                }
-                if(!nextLine[4].equals("N"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_location") + " \"" + nextLine[4] + "\";");
-                    writer.newLine();
-                }
-                if(!nextLine[5].equals("N"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "user_email") + " \"" + nextLine[5] + "\";");
-                    writer.newLine();
-                }
-                writer.write(getPrefix(TAG_Semangit + "github_user_created_at") + " \"" + nextLine[6] + "\";");
+                writer.write(getPrefix(TAG_Semangit + "github_user_created_at") + " \"" + nextLine[3] + "\";");
                 writer.newLine();
+
                 writer.write(getPrefix(TAG_Semangit + "github_user_is_org") + " ");
-                if(nextLine[7].equals("USR"))
+                if(nextLine[4].equals("USR"))
                 {
-                    writer.write("false ;");
+                    writer.write("false;");
                     writer.newLine();
                 }
                 else
                 {
-                    writer.write("true ;");
+                    writer.write("true;");
                     writer.newLine();
                 }
+
                 writer.write(getPrefix(TAG_Semangit + "github_user_deleted") + " ");
-                if(nextLine[8].equals("0"))
+                if(nextLine[5].equals("0"))
                 {
-                    writer.write("false ;");
+                    writer.write("false;");
                     writer.newLine();
                 }
                 else
                 {
-                    writer.write("true ;");
+                    writer.write("true;");
                     writer.newLine();
                 }
                 writer.write(getPrefix(TAG_Semangit + "github_user_fake") + " ");
-                if(nextLine[9].equals("0"))
+                if(nextLine[6].equals("0"))
                 {
-                    writer.write("false .");
+                    writer.write("false.");
                     writer.newLine();
                 }
                 else
                 {
-                    writer.write("true .");
+                    writer.write("true.");
+                    writer.newLine();
+                }
+
+                if(!nextLine[7].equals("N") && !nextLine[7].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_lng") + " \"" + nextLine[7] + "\";");
+                    writer.newLine();
+                }
+                if(!nextLine[8].equals("N") && !nextLine[8].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_lat") + " \"" + nextLine[8] + "\";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[9].equals("N") && !nextLine[9].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_country_code") + " \"" + nextLine[9] + "\";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[10].equals("N") && !nextLine[10].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_state") + " \"" + nextLine[10] + "\";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[11].equals("N") && !nextLine[11].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_city") + " \"" + nextLine[11] + "\";");
+                    writer.newLine();
+                }
+
+                if(!nextLine[12].equals("N") && !nextLine[12].equals(""))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_user_location") + " \"" + nextLine[12] + "\";");
                     writer.newLine();
                 }
             }
@@ -938,9 +1077,13 @@ public class MainClass implements Runnable {
             String[] nextLine;
             
             while((nextLine = reader.readNext())!= null) {
+                if(nextLine.length != 3) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\" ;");
+                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " true ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
                 writer.newLine();
@@ -959,6 +1102,58 @@ public class MainClass implements Runnable {
 
 
 
+    //project_languages
+
+    private static void parseProjectLanguages(String path)
+    {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(path + "project_languages.csv"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_languages.ttl"), 32768);
+            String[] nextLine;
+            Map<String, Integer> languages = new HashMap<>();
+            int langCtr = 0;
+            int currentLang;
+            while((nextLine = reader.readNext())!= null) {
+                if(nextLine.length != 4) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+                if(languages.containsKey(nextLine[1])) {
+                    currentLang = languages.get(nextLine[1]);
+                }
+                else
+                {
+                    languages.put(nextLine[1], langCtr++);
+                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Langprefix) + langCtr) + " a " + getPrefix(TAG_Semangit + "programming_language") + ";");
+                    writer.newLine();
+                    writer.write(getPrefix(TAG_Semangit + "programming_language_name") + " \"" + nextLine[1] + "\".");
+                    writer.newLine();
+                    currentLang = langCtr;
+                }
+                writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_language") + ";");
+                writer.newLine();
+                //bytes, timestamp, then close brackets and do remaining two links
+                writer.write(b64(getPrefix(TAG_Semangit + "github_project_language_bytes") + nextLine[2]) + ";");
+                writer.newLine();
+                writer.write(getPrefix(TAG_Semangit + "github_project_language_timestamp") + " \"" + nextLine[3] + "\"] " + getPrefix(TAG_Semangit + "github_project_language_repo") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ";");
+                writer.newLine();
+                writer.write(getPrefix(TAG_Semangit + "github_project_language_is") + " " + b64(getPrefix(TAG_Semangit + TAG_Langprefix) + currentLang));
+                writer.newLine();
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
+    //parseProjectTopics added as .csv file, but undocumented! Skipping this tiny file
+
+
+
 
     /**
      * Comment section. Below are all functions related to comments.
@@ -972,49 +1167,73 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_comments.csv"));
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768);
             String[] nextLine;
-            
+            String rightOfComma;
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 8) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+                try //check if all numeric fields are indeed numeric. If not, it's a broken line inside the csv file
+                {
+                    rightOfComma = nextLine[0].substring(nextLine[0].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[1].substring(nextLine[1].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[2].substring(nextLine[2].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    if (!nextLine[4].equals("N") && !nextLine[4].equals("")) {
+                        rightOfComma = nextLine[4].substring(nextLine[4].lastIndexOf(":") + 1);
+                        Integer.parseInt(rightOfComma);
+                    }
+                    if (!nextLine[5].equals("N") && !nextLine[5].equals("")) {
+                        rightOfComma = nextLine[5].substring(nextLine[5].lastIndexOf(":") + 1);
+                        Integer.parseInt(rightOfComma);
+                    }
+                    if (!nextLine[6].equals("N") && !nextLine[6].equals("")) {
+                        rightOfComma = nextLine[6].substring(nextLine[6].lastIndexOf(":") + 1);
+                        Integer.parseInt(rightOfComma);
+                    }
+                }
+                catch (NumberFormatException e) //broken csv file
+                {
+                    continue;
+                }
+
+
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
                 writer.write(b64(getPrefix(TAG_Semangit + TAG_Commentprefix + "commit_") + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "comment") + ";");
                 writer.newLine();
-                if(nextLine.length > 1 && !nextLine[1].equals("N") && !nextLine[1].equals("")){
+                if(!nextLine[1].equals("N") && !nextLine[1].equals("")){
                     writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1]) + ";"); //comment for a commit
                     writer.newLine();
                 }
-                if(nextLine.length > 2 && !nextLine[2].equals("N") && !nextLine[2].equals("")) {
+                if(!nextLine[2].equals("N") && !nextLine[2].equals("")) {
                     writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
                     writer.newLine();
                 }
-                if(nextLine.length > 3 && !nextLine[3].equals("N"))
+                if(!nextLine[3].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
                 }
 
-                if(nextLine.length > 4 && !nextLine[4].equals("N"))
+                if(!nextLine[4].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_line") + " " + nextLine[4] + ";");
                     writer.newLine();
                 }
 
-                if(nextLine.length > 5 && !nextLine[5].equals("N"))
+                if(!nextLine[5].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[5] + ";");
                     writer.newLine();
                 }
 
-                if(nextLine.length > 7) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
-                    writer.newLine();
-                }
-                else
-                {
-                    System.out.println("Missing comment_created_at in parseCommitComments. Using 0 value instead.");
-                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"0000-00-00 00:00:00\".");
-                    writer.newLine();
-                }
+                writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
+                writer.newLine();
             }
             writer.close();
         }
@@ -1036,15 +1255,19 @@ public class MainClass implements Runnable {
                 /*for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }*/
+                if(nextLine.length != 4) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
 
                 //TODO: Let's verify the integrity of the RDF output of this
                 writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
                 writer.newLine();
-                if(nextLine.length > 3) {
+                
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
                     writer.newLine();
-                }
-                if(nextLine.length > 1 && !nextLine[1].equals("") && !nextLine[1].equals("N")) {
+                
+                if(!nextLine[1].equals("") && !nextLine[1].equals("N")) {
                     writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
                     writer.newLine();
                 }
@@ -1071,55 +1294,62 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_comments.csv"));
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768);
             String[] nextLine;
-            
+            String rightOfComma;
             while ((nextLine = reader.readNext()) != null) {
+
+                if(nextLine.length != 7) //skip corrupted lines to prevent broken rdf
+                {
+                    continue;
+                }
+                try //check if all numeric fields are indeed numeric. If not, it's a broken line inside the csv file
+                {
+                    rightOfComma = nextLine[0].substring(nextLine[0].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[1].substring(nextLine[1].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[2].substring(nextLine[2].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[3].substring(nextLine[3].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                    rightOfComma = nextLine[5].substring(nextLine[5].lastIndexOf(":") + 1);
+                    Integer.parseInt(rightOfComma);
+                }
+                catch (NumberFormatException e) //broken csv file
+                {
+                    continue;
+                }
+                
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                if(nextLine.length != 7)
-                {
-                    System.out.println("Malformed input given to parsePullRequestComments. Now printing values: ");
-                    for(String s : nextLine)
-                    {
-                        System.out.println(s);
-                    }
-                    System.out.println("End of print. Now trying to handle this.");
-                }
-
                 //TODO: Let's verify the integrity of the RDF output of this
                 if(!nextLine[0].equals("")) {
-                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0])); //comment for a pull request
-                    if(nextLine.length > 5)
-                    {
-                        writer.write(",");
-                    }
-                    else
-                    {
-                        writer.write(";");
-                    }
+                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0])); //comment for a pull request                     
+                    writer.write(",");
                     writer.newLine();
                 }
                 else
                 {
                     writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " ");
                 }
-                if(nextLine.length > 5) {
+                if(!nextLine[5].equals("") && !nextLine[5].equals("N")) {
                     writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
                     writer.newLine();
                 }
-                if(nextLine.length > 6) { //fixes a crash
+                if(!nextLine[6].equals("") && !nextLine[6].equals("N")) {
                     writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
                     writer.newLine();
                 }
-                if(nextLine.length > 3) {
+                if(!nextLine[3].equals("") && !nextLine[3].equals("N")) {
                     writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
                     writer.newLine();
                 }
-                if(nextLine.length > 4) {
+                if(!nextLine[4].equals("") && !nextLine[4].equals("N")) {
+
                     writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
                     writer.newLine();
                 }
-                if(nextLine.length > 1 && !nextLine[1].equals("") && !nextLine[1].equals("N")) {
+                if(!nextLine[1].equals("") && !nextLine[1].equals("N")) {
                     writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
                     writer.newLine();
                 }
@@ -1209,6 +1439,7 @@ public class MainClass implements Runnable {
             case "issues": parseIssues(this.path);break;
             case "organization_members": parseOrganizationMembers(this.path);break;
             case "project_commits": parseProjectCommits(this.path);break;
+            case "project_languages": parseProjectLanguages(this.path);break;
             case "project_members": parseProjectMembers(this.path);break;
             case "projects": parseProjects(this.path);break;
             case "pull_request_comments": parsePullRequestComments(this.path);break;
@@ -1312,6 +1543,7 @@ public class MainClass implements Runnable {
             processes.add(new Thread(new MainClass("issues", args[0])));
             processes.add(new Thread(new MainClass("organization_members", args[0])));
             processes.add(new Thread(new MainClass("project_members", args[0])));
+            processes.add(new Thread(new MainClass("project_languages", args[0])));
             processes.add(new Thread(new MainClass("projects", args[0])));
             processes.add(new Thread(new MainClass("pull_request_comments", args[0])));
             processes.add(new Thread(new MainClass("pull_request_commits", args[0])));
@@ -1354,6 +1586,7 @@ public class MainClass implements Runnable {
             appendFileToOutput(correctPath, "issue_events.ttl");
             appendFileToOutput(correctPath, "issues.ttl");
             appendFileToOutput(correctPath, "project_members.ttl");
+            appendFileToOutput(correctPath, "project_languages.ttl");
             appendFileToOutput(correctPath, "projects.ttl");
             appendFileToOutput(correctPath, "pull_request_history.ttl");
             appendFileToOutput(correctPath, "pull_request_commits.ttl");
@@ -1398,5 +1631,8 @@ public class MainClass implements Runnable {
             System.exit(2);
         }
         System.exit(0);
+
+        //TODO: Some tables were added to GHTorrent. See project_languages, project_topics
+
     }
 }
