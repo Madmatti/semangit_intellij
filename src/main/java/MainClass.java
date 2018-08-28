@@ -8,7 +8,7 @@ public class MainClass implements Runnable {
     private String workOnFile;
     private String path;
 
-    //private static final String PREFIX_Semangit = "<http://www.sg.com/ont/>";
+    //private static final String PREFIX_Semangit = "<http://www.semangit.de/ontology/>";
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
@@ -1133,7 +1133,7 @@ public class MainClass implements Runnable {
                 writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_language") + ";");
                 writer.newLine();
                 //bytes, timestamp, then close brackets and do remaining two links
-                writer.write(b64(getPrefix(TAG_Semangit + "github_project_language_bytes") + nextLine[2]) + ";");
+                writer.write(getPrefix(TAG_Semangit + "github_project_language_bytes") + " " + nextLine[2] + ";");
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_project_language_timestamp") + " \"" + nextLine[3] + "\"] " + getPrefix(TAG_Semangit + "github_project_language_repo") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ";");
                 writer.newLine();
@@ -1381,13 +1381,12 @@ public class MainClass implements Runnable {
         File index = new File(outPath);
         if(!index.exists())
         {
-//            System.out.println("Index doesnt exist");
             try {
                 BufferedWriter writer = new BufferedWriter(new FileWriter(outPath), 32768);
                 final Set<Map.Entry<String, String>> entries = prefixTable.entrySet();
+                writer.write("@prefix semangit: <http://semangit.de/ontology/>.");
                 for(Map.Entry<String, String> entry : entries)
                 {
-//                    System.out.println();
                     writer.write("@prefix " + entry.getValue() + ": <http://semangit.de/ontology/" + entry.getKey() + "#>.");
                     writer.newLine();
                 }
