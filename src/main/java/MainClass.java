@@ -248,7 +248,7 @@ public class MainClass implements Runnable {
                 {
                     scm.totalColumns = colCtr;
                     schemata.put(tableName, scm);
-                    System.out.println("Added a schema for " + tableName + " with " + scm.totalColumns + " columns.");
+                    //System.out.println("Added a schema for " + tableName + " with " + scm.totalColumns + " columns.");
                     colCtr = 0;
                 }
                 if(line.contains(" INT(")) //the space before INT is important to avoid also counting booleans (i.e. TINYINT(1))
@@ -371,8 +371,7 @@ public class MainClass implements Runnable {
 
             curLine = reader.readNext();
             boolean abbreviated = false;
-            
-            //TODO!!
+
             TableSchema schema = schemata.get("commit_parents");
             while ((nextLine = reader.readNext()) != null) {
                 if(!integrityCheck(schema, nextLine))
@@ -1056,7 +1055,6 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                //TODO! repo_milestones is empty in all dumps?! Cannot convert without data...
             }
             writer.close();
         }
@@ -1184,6 +1182,10 @@ public class MainClass implements Runnable {
             }
             writer.close();
         }
+        catch (ArrayIndexOutOfBoundsException e)
+        {
+            System.out.println("Warning! Cannot parse users. Maybe working on an old dump? Skipping...");
+        }
         catch (Exception e)
         {
             e.printStackTrace();
@@ -1271,6 +1273,10 @@ public class MainClass implements Runnable {
                 writer.newLine();
             }
             writer.close();
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("Warning, seem to be working on an old dump. Some files could not be read from the SQL file.");
         }
         catch (Exception e)
         {
@@ -1668,7 +1674,7 @@ public class MainClass implements Runnable {
             initPrefixTable();
             parseSQLSchema(args[0]);
 
-            System.out.println("");
+            System.out.println();
 
             ArrayList<Thread> processes = new ArrayList<>();
             processes.add(new Thread(new MainClass("project_commits", args[0])));
