@@ -1,3 +1,4 @@
+import com.opencsv.CSVParser;
 import com.opencsv.CSVReader;
 
 import java.io.*;
@@ -207,6 +208,7 @@ public class MainClass implements Runnable {
         private int totalColumns = 0;
         int integrityChecksPos = 0;
         int integrityChecksNeg = 0;
+        int nullabilityFails = 0;
         private TableSchema(){}
     }
 
@@ -240,7 +242,7 @@ public class MainClass implements Runnable {
                 {
                     continue;
                 }
-                if((line.contains("DEFAULT CHARACTER SET") || line.contains("PRIMARY KEY") || line.contains("FOREIGN")  || line.contains("ENGINE") )&& !tableName.equals("") && !schemata.containsKey(tableName))
+                if((line.contains("CONSTRAINT") || line.contains("DEFAULT CHARACTER SET") || line.contains("PRIMARY KEY") || line.contains("FOREIGN")  || line.contains("ENGINE") )&& !tableName.equals("") && !schemata.containsKey(tableName))
                 {
                     scm.totalColumns = colCtr;
                     schemata.put(tableName, scm);
@@ -249,7 +251,9 @@ public class MainClass implements Runnable {
                 }
                 if(line.contains(" INT(")) //the space before INT is important to avoid also counting booleans (i.e. TINYINT(1))
                 {
-                    scm.integerColumns.add(colCtr);
+                    if(!line.contains("CONSTRAINT")) {
+                        scm.integerColumns.add(colCtr);
+                    }
                 }
                 //if(line.contains("INT") || line.contains("TINYINT") || line.contains("VARCHAR") || line.contains("TIMESTAMP") || line.contains("MEDIUMTEXT") || line.contains("DECIMAL") || line.contains("CHAR"))
                 //VARCHAR covered by CHAR, TINYINT by INT
@@ -292,6 +296,15 @@ public class MainClass implements Runnable {
         {
             for(Integer i : schema.integerColumns)
             {
+                //Test if line may be empty and check for null!
+                if(schema.nullableColumns.get(i))
+                {
+                    //null values allowed.
+                    if(line[i].equals("") || line[i].equals("N"))
+                    {
+                        continue;
+                    }
+                }
                 try{
                     Integer.parseInt(line[i]);
                 }
@@ -310,6 +323,7 @@ public class MainClass implements Runnable {
                 if(line[currentCol].equals("") || line[currentCol].equals("N"))
                 {
                     schema.integrityChecksNeg++;
+                    schema.nullabilityFails++;
                     return false;
                 }
             }
@@ -1335,17 +1349,18 @@ public class MainClass implements Runnable {
 
                 if(consecutiveFailedChecks > 10)
                 {
-                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below.");
+                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below, starting with the last one that didn't fail.");
                     for(String[] s : failedComments)
                     {
-                        System.out.println();
                         for(String t : s) {
-                            System.out.print(t);
+                            System.out.print(t + ">|<");
                         }
+                        System.out.println();
                     }
                 }
 
                 failedComments.clear();
+                failedComments.add(nextLine); //last working line
                 consecutiveFailedChecks = 0;
 
                 for (int i = 0; i < nextLine.length; i++) {
@@ -1455,17 +1470,18 @@ public class MainClass implements Runnable {
 
                 if(consecutiveFailedChecks > 10)
                 {
-                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below.");
+                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below, starting with the last one that didn't fail.");
                     for(String[] s : failedComments)
                     {
-                        System.out.println();
                         for(String t : s) {
-                            System.out.print(t);
+                            System.out.print(t + ">|<");
                         }
+                        System.out.println();
                     }
                 }
 
                 failedComments.clear();
+                failedComments.add(nextLine);
                 consecutiveFailedChecks = 0;
 
                 for (int i = 0; i < nextLine.length; i++) {
@@ -1790,7 +1806,7 @@ public class MainClass implements Runnable {
         for(Map.Entry<String, TableSchema> t : schemaEntries)
         {
             if(t.getValue().integrityChecksNeg * 10 > t.getValue().integrityChecksPos + t.getValue().integrityChecksNeg) //
-            System.out.println("WARNING! Schema for: " + t.getKey() + ". Pos: " + t.getValue().integrityChecksPos + ". Neg: " + t.getValue().integrityChecksNeg);
+            System.out.println("WARNING! Schema for: " + t.getKey() + ". Pos: " + t.getValue().integrityChecksPos + ". Neg: " + t.getValue().integrityChecksNeg + ". Nullability: " + t.getValue().nullabilityFails);
         }
 //        System.out.println("Integrity Checks done: " + integrityCheckNeg + integrityCheckPos + ". Pos: " + integrityCheckPos + ", Neg: " + integrityCheckNeg);
 
