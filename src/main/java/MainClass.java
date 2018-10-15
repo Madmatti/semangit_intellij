@@ -1,5 +1,4 @@
 import com.opencsv.CSVReader;
-import org.apache.commons.collections.map.HashedMap;
 
 import java.io.*;
 import java.util.*;
@@ -204,6 +203,7 @@ public class MainClass implements Runnable {
     private static class TableSchema
     {
         private ArrayList<Integer> integerColumns = new ArrayList<>();
+        private ArrayList<Boolean> nullableColumns = new ArrayList<>();
         private int totalColumns = 0;
         int integrityChecksPos = 0;
         int integrityChecksNeg = 0;
@@ -220,10 +220,6 @@ public class MainClass implements Runnable {
      */
 
     private static void parseSQLSchema(String path) {
-        /*if (!path.contains("schema.sql")) {
-            System.out.println("parseSQLSchema called on a file other than schema.sql. Aborting.");
-            System.exit(1);
-        }*/
 
         try {
             BufferedReader br = new BufferedReader(new FileReader(path + "schema.sql"));
@@ -255,8 +251,18 @@ public class MainClass implements Runnable {
                 {
                     scm.integerColumns.add(colCtr);
                 }
-                if(line.contains("INT") || line.contains("TINYINT") || line.contains("VARCHAR") || line.contains("TIMESTAMP") || line.contains("MEDIUMTEXT") || line.contains("DECIMAL") || line.contains("CHAR"))
+                //if(line.contains("INT") || line.contains("TINYINT") || line.contains("VARCHAR") || line.contains("TIMESTAMP") || line.contains("MEDIUMTEXT") || line.contains("DECIMAL") || line.contains("CHAR"))
+                //VARCHAR covered by CHAR, TINYINT by INT
+                if(line.contains("INT") || line.contains("TIMESTAMP") || line.contains("MEDIUMTEXT") || line.contains("DECIMAL") || line.contains("CHAR"))
                 {
+                    if(line.contains("NOT NULL"))
+                    {
+                        scm.nullableColumns.add(false);
+                    }
+                    else
+                    {
+                        scm.nullableColumns.add(true);
+                    }
                     colCtr++;
                 }
             }
@@ -296,6 +302,19 @@ public class MainClass implements Runnable {
                 }
             }
         }
+        int currentCol = 0;
+        for(boolean b : schema.nullableColumns)
+        {
+            if(!b) //column must not be null
+            {
+                if(line[currentCol].equals("") || line[currentCol].equals("N"))
+                {
+                    schema.integrityChecksNeg++;
+                    return false;
+                }
+            }
+            currentCol++;
+        }
         schema.integrityChecksPos++;
         return true;
     }
@@ -312,7 +331,7 @@ public class MainClass implements Runnable {
                 String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
 
                 int in = Integer.parseInt(rightOfComma);
-                Integer j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
+                int j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
                 for (int i = 0; i < j; i++) {
                     sb.append(alphabet64.charAt(in % alphabet64.length()));
                     in /= alphabet64.length();
@@ -1303,43 +1322,31 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_comments.csv"));
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768);
             String[] nextLine;
-            String rightOfComma;
-
+            int consecutiveFailedChecks = 0;
+            ArrayList<String[]> failedComments = new ArrayList<>();
             TableSchema schema = schemata.get("commit_comments");
             while ((nextLine = reader.readNext()) != null) {
                 if(!integrityCheck(schema, nextLine))
                 {
+                    consecutiveFailedChecks++;
+                    failedComments.add(nextLine);
                     continue;
                 }
 
-                try //check if all numeric fields are indeed numeric. If not, it's a broken line inside the csv file
+                if(consecutiveFailedChecks > 10)
                 {
-                    //TODO: Should all be unnecessary due to integrity check above
-                    rightOfComma = nextLine[0].substring(nextLine[0].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[1].substring(nextLine[1].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[2].substring(nextLine[2].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    if (!nextLine[4].equals("N") && !nextLine[4].equals("")) {
-                        rightOfComma = nextLine[4].substring(nextLine[4].lastIndexOf(":") + 1);
-                        Integer.parseInt(rightOfComma);
+                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below.");
+                    for(String[] s : failedComments)
+                    {
+                        System.out.println();
+                        for(String t : s) {
+                            System.out.print(t);
+                        }
                     }
-                    if (!nextLine[5].equals("N") && !nextLine[5].equals("")) {
-                        rightOfComma = nextLine[5].substring(nextLine[5].lastIndexOf(":") + 1);
-                        Integer.parseInt(rightOfComma);
-                    }
-                    if (!nextLine[6].equals("N") && !nextLine[6].equals("")) {
-                        rightOfComma = nextLine[6].substring(nextLine[6].lastIndexOf(":") + 1);
-                        Integer.parseInt(rightOfComma);
-                    }
-                }
-                catch (NumberFormatException e) //broken csv file
-                {
-                    System.out.println("Obviously it's not unnecessary... :D");
-                    continue;
                 }
 
+                failedComments.clear();
+                consecutiveFailedChecks = 0;
 
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
@@ -1433,35 +1440,34 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_comments.csv"));
             BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768);
             String[] nextLine;
-            String rightOfComma;
+
+            int consecutiveFailedChecks = 0;
+            ArrayList<String[]> failedComments = new ArrayList<>();
 
             TableSchema schema = schemata.get("pull_request_comments");
             while ((nextLine = reader.readNext()) != null) {
                 if(!integrityCheck(schema, nextLine))
                 {
+                    consecutiveFailedChecks++;
+                    failedComments.add(nextLine);
                     continue;
                 }
 
-                try //check if all numeric fields are indeed numeric. If not, it's a broken line inside the csv file
+                if(consecutiveFailedChecks > 10)
                 {
-                    //TODO: Should be unnecessary due to integrity check
-                    rightOfComma = nextLine[0].substring(nextLine[0].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[1].substring(nextLine[1].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[2].substring(nextLine[2].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[3].substring(nextLine[3].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
-                    rightOfComma = nextLine[5].substring(nextLine[5].lastIndexOf(":") + 1);
-                    Integer.parseInt(rightOfComma);
+                    System.out.println("Info: " + consecutiveFailedChecks + " consecutive comment lines failed the integrity check in " + Thread.currentThread().getStackTrace()[1] + ". The lines are printed below.");
+                    for(String[] s : failedComments)
+                    {
+                        System.out.println();
+                        for(String t : s) {
+                            System.out.print(t);
+                        }
+                    }
                 }
-                catch (NumberFormatException e) //broken csv file
-                {
-                    System.out.println("Obviously this is not unnecessary, either.");
-                    continue;
-                }
-                
+
+                failedComments.clear();
+                consecutiveFailedChecks = 0;
+
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
@@ -1542,10 +1548,10 @@ public class MainClass implements Runnable {
             }
         }
         try(BufferedReader br = new BufferedReader(new FileReader(directory.concat(fileName)))) {
-            Writer output = new BufferedWriter(new FileWriter(outPath, true));
+            BufferedWriter output = new BufferedWriter(new FileWriter(outPath, true));
             for(String line; (line = br.readLine()) != null; ) {
                 output.append(line);
-                ((BufferedWriter) output).newLine();
+                output.newLine();
             }
             output.close();
             // line is not visible here.
