@@ -641,8 +641,11 @@ public class MainClass implements Runnable {
                 writer.newLine();
                 writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ";");
                 writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
-                writer.newLine();
+                if(!curLine[2].equals("N"))
+                {
+                    writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
+                    writer.newLine();
+                }
                 if(!curLine[3].equals("N"))
                 {
                     writer.write(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3]) + ";");
@@ -829,7 +832,11 @@ public class MainClass implements Runnable {
             while ((nextLine = reader.readNext()) != null) {
                 if(!integrityCheck(schema, nextLine))
                 {
-                    continue;
+                    schema.integrityChecksNeg--; //re-testing
+                    //changes have been made to the structure without documenting it in the schema... so here goes a check for that
+                    if(!integrityCheck(schema,  Arrays.copyOf(nextLine, nextLine.length - 1))) {
+                        continue;
+                    }
                 }
 
 
@@ -1786,8 +1793,6 @@ public class MainClass implements Runnable {
                     }
                 }
             }
-
-
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -1805,7 +1810,9 @@ public class MainClass implements Runnable {
         for(Map.Entry<String, TableSchema> t : schemaEntries)
         {
             if(t.getValue().integrityChecksNeg * 10 > t.getValue().integrityChecksPos + t.getValue().integrityChecksNeg) //
-            System.out.println("WARNING! Schema for: " + t.getKey() + ". Pos: " + t.getValue().integrityChecksPos + ". Neg: " + t.getValue().integrityChecksNeg + ". Nullability: " + t.getValue().nullabilityFails);
+            {
+                System.out.println("WARNING! Schema for: " + t.getKey() + ". Pos: " + t.getValue().integrityChecksPos + ". Neg: " + t.getValue().integrityChecksNeg + ". Nullability: " + t.getValue().nullabilityFails);
+            }
         }
 //        System.out.println("Integrity Checks done: " + integrityCheckNeg + integrityCheckPos + ". Pos: " + integrityCheckPos + ", Neg: " + integrityCheckNeg);
 
