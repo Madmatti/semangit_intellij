@@ -10,6 +10,7 @@ public class MainClass implements Runnable {
     private static boolean debug = false;
 
     //private static final String PREFIX_Semangit = "<http://www.semangit.de/ontology/>";
+    
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
