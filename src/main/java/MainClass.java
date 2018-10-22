@@ -839,7 +839,7 @@ public class MainClass implements Runnable {
                     schema.integrityChecksNeg--; //re-testing
                     //changes have been made to the structure without documenting it in the schema... so here goes a check for that
                     if(brokenLineCheck(schema,  Arrays.copyOf(nextLine, nextLine.length - 1))) {
-                        System.out.println("Still broken...");
+                        //System.out.println("Still broken...");
                         continue;
                     }
                 }
