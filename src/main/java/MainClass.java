@@ -10,7 +10,6 @@ public class MainClass implements Runnable {
     private static boolean debug = false;
 
     //private static final String PREFIX_Semangit = "<http://www.semangit.de/ontology/>";
-    
     private static final String TAG_Semangit = "semangit:";
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
@@ -246,7 +245,10 @@ public class MainClass implements Runnable {
                 if((line.contains("CONSTRAINT") || line.contains("DEFAULT CHARACTER SET") || line.contains("PRIMARY KEY") || line.contains("FOREIGN")  || line.contains("ENGINE") )&& !tableName.equals("") && !schemata.containsKey(tableName))
                 {
                     scm.totalColumns = colCtr;
-                    schemata.put(tableName, scm);
+                    if(!tableName.equals("schema_info"))
+                    {
+                        schemata.put(tableName, scm);
+                    }
                     //System.out.println("Added a schema for " + tableName + " with " + scm.totalColumns + " columns.");
                     colCtr = 0;
                 }
@@ -1680,7 +1682,10 @@ public class MainClass implements Runnable {
                 }
                 else
                 {
-                    System.out.println("Unknown parameter: " + s);
+                    if(!s.equals(args[0]))
+                    {
+                        System.out.println("Unknown parameter: " + s);
+                    }
                 }
             }
             if(!prefixing && (mode != 3))
@@ -1831,6 +1836,18 @@ public class MainClass implements Runnable {
         }
 //      System.out.println("Integrity Checks done: " + integrityCheckNeg + integrityCheckPos + ". Pos: " + integrityCheckPos + ", Neg: " + integrityCheckNeg);
         if(debug) {
+            System.out.println("Line rejection percentage (integrity check) per table: ");
+            for(Map.Entry<String, TableSchema> t : schemaEntries)
+            {
+                if(t.getValue().integrityChecksNeg + t.getValue().integrityChecksPos == 0)
+                {
+                    System.out.println(t.getKey() + ": No data found.");
+                }
+                else
+                {
+                    System.out.println(t.getKey() + ": " + ((double)(t.getValue().integrityChecksNeg) / (t.getValue().integrityChecksPos + t.getValue().integrityChecksNeg)));
+                }
+            }
             System.out.println("Now printing statistics for prefix usage for further optimization.");
             final Set<Map.Entry<String, Integer>> prefixCtrs = prefixCtr.entrySet();
             for (Map.Entry<String, Integer> entry : prefixCtrs) {
