@@ -8,6 +8,10 @@ public class MainClass implements Runnable {
     private String workOnFile;
     private String path;
     private static boolean debug = false;
+    private static int sampling = 0;
+//    private static float samplingPercentage = 0.1f;
+    private static Random rnd = new Random();
+    private static ArrayList<Float> samplingPercentages = new ArrayList<>();
 
     //private static final String PREFIX_Semangit = "<http://www.semangit.de/ontology/>";
     private static final String TAG_Semangit = "semangit:";
@@ -397,13 +401,61 @@ public class MainClass implements Runnable {
         }
     }
 
+    private static void printTriples(String currentTriple, ArrayList<BufferedWriter> writers)
+    {
+        try {
+            switch (sampling)
+            {
+                case 0: writers.get(0).write(currentTriple);break; //no sampling
+                case 1: break;    //head -- REMOVED! Doing that via bash instead!
+                case 2: break;    //tail -- REMOVED! Doing that via bash instead!
+                case 3:           //random sampling with given percentage(s)
+                    if(samplingPercentages.size() == 1) //only one sample to be generated
+                    {
+                        if(rnd.nextFloat() < samplingPercentages.get(0)){
+                            writers.get(0).write(currentTriple);
+                        }
+                        break;
+                    }
+                    else //multiple samples. Got one file handler per percentage
+                    {
+                        for(int i = 0; i < samplingPercentages.size(); i++)
+                        {
+                            if(rnd.nextFloat() < samplingPercentages.get(i))
+                            {
+                                writers.get(i).write(currentTriple);
+                            }
+                        }
+                    }
+            }
+        }
+        catch (java.io.IOException e)
+        {
+            e.printStackTrace();
+            errorCtr++;
+        }
+
+    }
+
     private static void parseCommitParents(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_parents.csv"));
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commit_parents.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_parents.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_parents.ttl"), 32768));
+                }
+            }
             String[] nextLine;
             String[] curLine;
+
 
             curLine = reader.readNext();
             boolean abbreviated = false;
@@ -416,29 +468,34 @@ public class MainClass implements Runnable {
                 }
 
                 if (!abbreviated) {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
                 } else {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1])); //only specifying next object. subject/predicate are abbreviated
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1])); //only specifying next object. subject/predicate are abbreviated
                 }
                 if (curLine[0].equals(nextLine[0])) {
-                    writer.write(","); //abbreviating subject and predicate for next line
+                    currentTriple = currentTriple.concat(","); //abbreviating subject and predicate for next line
                     abbreviated = true;
                 } else {
-                    writer.write("."); //cannot use turtle abbreviation here
+                    currentTriple = currentTriple.concat("."); //cannot use turtle abbreviation here
+                    printTriples(currentTriple, writers);
+                    currentTriple = "";
                     abbreviated = false;
                 }
-                writer.newLine();
+                currentTriple = currentTriple.concat("\n");
                 curLine = nextLine;
             }
             //handle last line of file
             if(curLine.length == 2){
                 if (!abbreviated) {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "commit_has_parent") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
                 } else {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + "."); //only specifying next object. subject/predicate are abbreviated
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + "."); //only specifying next object. subject/predicate are abbreviated
                 }
+                printTriples(currentTriple, writers);
             }
-            writer.close();
+            for(BufferedWriter w : writers) {
+                w.close();
+            }
         }
         catch(Exception e)
         {
@@ -1556,40 +1613,68 @@ public class MainClass implements Runnable {
 
     private static void appendFileToOutput(String directory, String fileName)
     {
-        String outPath = directory.concat("combined.ttl");
-        File index = new File(outPath);
-        if(!index.exists())
-        {
-            try {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(outPath), 32768);
-                final Set<Map.Entry<String, String>> entries = prefixTable.entrySet();
-                writer.write("@prefix semangit: <http://semangit.de/ontology/>.");
-                for(Map.Entry<String, String> entry : entries)
-                {
-                    writer.write("@prefix " + entry.getValue() + ": <http://semangit.de/ontology/" + entry.getKey() + "#>.");
-                    writer.newLine();
+        if(samplingPercentages.size() < 2) {
+            String outPath = directory.concat("combined.ttl");
+            File index = new File(outPath);
+            if (!index.exists()) {
+                try {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(outPath), 32768);
+                    final Set<Map.Entry<String, String>> entries = prefixTable.entrySet();
+                    writer.write("@prefix semangit: <http://semangit.de/ontology/>.");
+                    for (Map.Entry<String, String> entry : entries) {
+                        writer.write("@prefix " + entry.getValue() + ": <http://semangit.de/ontology/" + entry.getKey() + "#>.");
+                        writer.newLine();
+                    }
+                    writer.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
                 }
-                writer.close();
             }
-            catch (Exception e)
-            {
+            try (BufferedReader br = new BufferedReader(new FileReader(directory.concat(fileName)))) {
+                BufferedWriter output = new BufferedWriter(new FileWriter(outPath, true));
+                for (String line; (line = br.readLine()) != null; ) {
+                    output.append(line);
+                    output.newLine();
+                }
+                output.close();
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(1);
             }
         }
-        try(BufferedReader br = new BufferedReader(new FileReader(directory.concat(fileName)))) {
-            BufferedWriter output = new BufferedWriter(new FileWriter(outPath, true));
-            for(String line; (line = br.readLine()) != null; ) {
-                output.append(line);
-                output.newLine();
+        else {
+            for(float f : samplingPercentages)
+            {
+                String outPath = directory.concat(f + "/combined.ttl");
+                File index = new File(outPath);
+                if (!index.exists()) {
+                    try {
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(outPath), 32768);
+                        final Set<Map.Entry<String, String>> entries = prefixTable.entrySet();
+                        writer.write("@prefix semangit: <http://semangit.de/ontology/>.");
+                        for (Map.Entry<String, String> entry : entries) {
+                            writer.write("@prefix " + entry.getValue() + ": <http://semangit.de/ontology/" + entry.getKey() + "#>.");
+                            writer.newLine();
+                        }
+                        writer.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+                try (BufferedReader br = new BufferedReader(new FileReader(directory.concat(f + "/" + fileName)))) {
+                    BufferedWriter output = new BufferedWriter(new FileWriter(outPath, true));
+                    for (String line; (line = br.readLine()) != null; ) {
+                        output.append(line);
+                        output.newLine();
+                    }
+                    output.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    //System.exit(1); //TODO: Add this line again - just removed for development
+                }
             }
-            output.close();
-            // line is not visible here.
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            System.exit(1);
         }
     }
 
@@ -1637,6 +1722,8 @@ public class MainClass implements Runnable {
     {
         if(args.length > 1)
         {
+            boolean percentageGiven = false;
+            boolean samplingGiven = false;
             //mode, prefixing
             for(String s: args)
             {
@@ -1680,11 +1767,64 @@ public class MainClass implements Runnable {
                     debug = true;
                     System.out.println("Debug mode enabled.");
                 }
+                else if(s.contains("-sampling="))
+                {
+                    String rightOfEql = s.substring(s.lastIndexOf("=") + 1);
+                    samplingGiven = true;
+                    switch (rightOfEql)
+                    {
+                        case "head": sampling = 1;break;
+                        case "tail": sampling = 2;break;
+                        case "random": sampling = 3;break;
+                        default: sampling = 0; samplingGiven = false;
+                        System.out.println("Invalid sampling method. Available methods are head, tail and random. Using no sampling.");
+                    }
+                }
+                else if(s.contains("-percentage=")) //can be used multiple times so we generate multiple samples in one go
+                {
+                    String rightOfEql = s.substring(s.lastIndexOf("=") + 1);
+
+                    try{
+                        samplingPercentages.add(Float.parseFloat(rightOfEql));
+                        if(samplingPercentages.get(samplingPercentages.size() - 1) > 0 && samplingPercentages.get(samplingPercentages.size() -1) <= 1)
+                        {
+                            //TODO: Mehrere samples in einem Durchlauf erlauben. Mehrere percentages pro run in einem stack speichern
+                            percentageGiven = true;
+                        }
+                        else {
+                            System.out.println("Percentage needs to be (o, 1]");
+                            System.exit(1);
+                        }
+                    }
+                    catch (NumberFormatException e){
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
                 else
                 {
                     if(!s.equals(args[0]))
                     {
                         System.out.println("Unknown parameter: " + s);
+                        System.out.println("Usage: java -cp com.semangit_main.jar Mainass <path/to/input/directory> [-base=64|32|16|10] [-noprefix] [-sampling=head|tail|random] [-percentage=X]");
+                        System.out.println("percentage parameter is obligatory, if sampling parameter is given.");
+                    }
+                }
+            }
+            if(samplingGiven && !percentageGiven)
+            {
+                System.out.println("Please specify the sampling percentage with -percentage=X");
+                System.exit(1);
+            }
+            if(samplingPercentages.size() > 1)
+            {
+                //multiple samples to be generated. need to organize in sub-folders
+                for(float f : samplingPercentages)
+                {
+                    File index = new File(args[0] + "rdf/" + f);
+                    if (!index.exists() && !index.mkdirs()) {
+                        System.out.println("Unable to create " + args[0] + "rdf/" + f + "/ directory. Exiting.");
+                        System.exit(1);
                     }
                 }
             }
@@ -1793,22 +1933,40 @@ public class MainClass implements Runnable {
             appendFileToOutput(correctPath, "followers.ttl");
             appendFileToOutput(correctPath, "users.ttl");
 
-            if(index.exists())
-            {
-                String[] entries = index.list();
-                if(entries != null)
-                {
-                    for(String s : entries)
-                    {
-                        File currentFile = new File(index.getPath(), s);
-                        if(s.equals("combined.ttl"))
-                        {
-                            continue;
+            if(samplingPercentages.size() > 1) {
+                for (float f : samplingPercentages) {
+                    File index2 = new File(args[0] + "/rdf/" + f);
+
+                    if (index2.exists()) {
+                        String[] entries = index2.list();
+                        if (entries != null) {
+                            for (String s : entries) {
+                                File currentFile = new File(index2.getPath(), s);
+                                if (s.equals("combined.ttl")) {
+                                    continue;
+                                }
+                                if (!currentFile.delete()) {
+                                    System.out.println("Failed to delete existing file: " + index2.getPath() + s);
+                                    System.exit(1);
+                                }
+                            }
                         }
-                        if(!currentFile.delete())
-                        {
-                            System.out.println("Failed to delete existing file: " + index.getPath() + s);
-                            System.exit(1);
+                    }
+                }
+            }
+            else {
+                if (index.exists()) {
+                    String[] entries = index.list();
+                    if (entries != null) {
+                        for (String s : entries) {
+                            File currentFile = new File(index.getPath(), s);
+                            if (s.equals("combined.ttl")) {
+                                continue;
+                            }
+                            if (!currentFile.delete()) {
+                                System.out.println("Failed to delete existing file: " + index.getPath() + s);
+                                System.exit(1);
+                            }
                         }
                     }
                 }
