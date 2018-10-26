@@ -5,6 +5,8 @@ import java.util.*;
 
 public class MainClass implements Runnable {
 
+    //TODO: Replace currentTriple = currentTriple.concat by string builder solutions. Concatenating strings copies them!!!
+
     private String workOnFile;
     private String path;
     private static boolean debug = false;
@@ -508,7 +510,19 @@ public class MainClass implements Runnable {
     private static void parseCommits(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "commits.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commits.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commits.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commits.ttl"), 32768));
+                }
+            }
             String[] nextLine;
 
             TableSchema schema = schemata.get("commits");
@@ -519,22 +533,27 @@ public class MainClass implements Runnable {
                 }
 
                 String commitURI = b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[0]);
-                writer.write(  commitURI + " a " + getPrefix(TAG_Semangit + "github_commit") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "commit_sha") + " \"" + nextLine[1] + "\";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "commit_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "commit_committed_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[3]) + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(  commitURI + " a " + getPrefix(TAG_Semangit + "github_commit") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "commit_sha") + " \"" + nextLine[1] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "commit_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "commit_committed_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[3]) + ";");
+                currentTriple = currentTriple.concat("\n");
                 if(!nextLine[4].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "commit_repository") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[4]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "commit_repository") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[4]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                writer.write(getPrefix(TAG_Semangit + "commit_created_at") + " \"" + nextLine[5] + "\".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "commit_created_at") + " \"" + nextLine[5] + "\".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -548,7 +567,21 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "followers.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/followers.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/followers.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/followers.ttl"), 32768));
+                }
+            }
+
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("followers");
@@ -558,16 +591,21 @@ public class MainClass implements Runnable {
                     continue;
                 }
 
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " false ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_follows") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0]) + ".");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_or_project") + " false ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_follows") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0]) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -581,7 +619,20 @@ public class MainClass implements Runnable {
     private static void parseIssueEvents(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_events.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issue_events.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_events.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_events.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("issue_events");
@@ -592,22 +643,27 @@ public class MainClass implements Runnable {
                 }
 
                 //event id, issue id, actor id, action, action specific sha, created at
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_issue_event") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_issue_event_created_at") + " \"" + nextLine[5] + "\";");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_issue_event") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_event_created_at") + " \"" + nextLine[5] + "\";");
+                currentTriple = currentTriple.concat("\n");
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_issue_event_action_specific_sha") + " \"" + nextLine[4] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_event_action_specific_sha") + " \"" + nextLine[4] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                writer.write(getPrefix(TAG_Semangit + "github_issue_event_action") + " \"" + nextLine[3] + "\" ] ");
-                writer.write(getPrefix(TAG_Semangit + "github_issue_event_actor") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_issue_event_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[1]) + ".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_event_action") + " \"" + nextLine[3] + "\" ] ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_event_actor") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_event_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[1]) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -621,7 +677,20 @@ public class MainClass implements Runnable {
     private static void parseIssueLabels(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_labels.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issue_labels.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_labels.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_labels.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             
             String[] curLine = reader.readNext();
@@ -637,36 +706,43 @@ public class MainClass implements Runnable {
 
                 if(abbreviated)
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //only print object
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //only print object
                 }
                 else
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //print entire triple
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //print entire triple
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
                     abbreviated = true;
-                    writer.write(",");
+                    currentTriple = currentTriple.concat(",");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else {
                     abbreviated = false;
-                    writer.write(".");
+                    currentTriple = currentTriple.concat(".");
+                    currentTriple = currentTriple.concat("\n");
+                    printTriples(currentTriple, writers);
+                    currentTriple = "";
                 }
-                writer.newLine();
+
 
                 curLine = nextLine;
             }
             if(abbreviated)
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //only print object
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //only print object
             }
             else
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //print entire triple
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "github_issue_label_used_by") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[1])); //print entire triple
             }
-            writer.write(".");
-            writer.newLine();
-            writer.close();
+            currentTriple = currentTriple.concat(".");
+            currentTriple = currentTriple.concat("\n");
+            printTriples(currentTriple, writers);
+            for(BufferedWriter w : writers) {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -679,7 +755,20 @@ public class MainClass implements Runnable {
     private static void parseIssues(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "issues.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issues.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issues.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issues.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             
             String[] curLine = reader.readNext();
@@ -698,54 +787,61 @@ public class MainClass implements Runnable {
                     continue;
                 }
                 String issueURL = b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[7]);
-                writer.write( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ";");
+                currentTriple = currentTriple.concat("\n");
                 if(!curLine[2].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!curLine[3].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!curLine[5].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                writer.write(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
                 curLine = nextLine;
 
             }
             //Handle last line
             String issueURL = b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + curLine[7]);
-            writer.write( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
-            writer.newLine();
-            writer.write(getPrefix(TAG_Semangit + "github_issue_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ";");
-            writer.newLine();
+            currentTriple = currentTriple.concat( issueURL + " a " + getPrefix(TAG_Semangit + "github_issue") + ";");
+            currentTriple = currentTriple.concat("\n");
+            currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ";");
+            currentTriple = currentTriple.concat("\n");
             if(!curLine[2].equals("N"))
             {
-                writer.write(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_reporter") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[2]) + ";");
+                currentTriple = currentTriple.concat("\n");
             }
             if(!curLine[3].equals("N"))
             {
-                writer.write(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3]) + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_assignee") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + curLine[3]) + ";");
+                currentTriple = currentTriple.concat("\n");
             }
             if(!curLine[5].equals("N"))
             {
-                writer.write(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5]) + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[5]) + ";");
+                currentTriple = currentTriple.concat("\n");
             }
-            writer.write(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
-            writer.newLine();
-            writer.close();
+            currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_issue_created_at") + " \"" + curLine[6] + "\".");
+            currentTriple = currentTriple.concat("\n");
+            printTriples(currentTriple, writers);
+            //currentTriple = "";
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -757,7 +853,20 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "organization_members.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/organization_members.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/organization_members.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/organization_members.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("organization_members");
@@ -768,14 +877,19 @@ public class MainClass implements Runnable {
                 }
 
 
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_organization_join_event") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_organization_joined_at") + " \"" + nextLine[2] + "\" ] " + getPrefix(TAG_Semangit + "github_organization_joined_by") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_organization_is_joined") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0]) + ".");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_organization_join_event") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_organization_joined_at") + " \"" + nextLine[2] + "\" ] " + getPrefix(TAG_Semangit + "github_organization_joined_by") + " " + getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1] + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_organization_is_joined") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[0]) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -790,7 +904,20 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "project_commits.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_commits.ttl"), 32768);
+            StringBuilder sb = new StringBuilder();
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_commits.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_commits.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             
             String[] curLine = reader.readNext();
@@ -806,39 +933,43 @@ public class MainClass implements Runnable {
 
                 if(abbreviated) //abbreviated in previous step. Only need to print object now
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1])); //one commit for multiple repositories (branching / merging)
+                    sb.append(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1])); //one commit for multiple repositories (branching / merging)
                 }
                 else //no abbreviation occurred. Full subject predicate object triple printed
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "repository_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]));
+                    sb.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) ).append( " " ) .append( getPrefix(TAG_Semangit + "repository_has_commit") ).append( " " ) .append( b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]));
                 }
 
                 abbreviated = (curLine[0].equals(nextLine[0]));
                 curLine = nextLine;
                 if(abbreviated)
                 {
-                    writer.write(",");
-                    //no new line to save space
+                    sb.append(",\n");
                 }
                 else {
-                    writer.write(".");
-                    writer.newLine();
+                    sb.append(".\n");
+                    printTriples(sb.toString(), writers);
+                    sb = new StringBuilder(); //TODO: Semi memory leak due to slow garbage collection?
                 }
             }
 
-
+            System.out.println("Working on last line");
 
             //handle last line
             if(abbreviated) //abbreviated in previous step. Only need to print object now
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + "."); //one commit for multiple repositories (branching / merging)
+                sb.append(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) ).append( "."); //one commit for multiple repositories (branching / merging)
             }
             else //no abbreviation occurred. Full subject predicate object triple printed
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "repository_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) + ".");
+                sb.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) ).append( " " ).append( getPrefix(TAG_Semangit + "repository_has_commit") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) ).append( ".");
             }
+            printTriples(sb.toString(), writers);
 
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -854,7 +985,20 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "project_members.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_members.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_members.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_members.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("project_members");
@@ -865,15 +1009,20 @@ public class MainClass implements Runnable {
                 }
 
 
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_join_event") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_project_join_event_created_at") + " \"" + nextLine[2] + "\" ] ");
-                writer.write(getPrefix(TAG_Semangit + "github_project_joining_user") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_project_joined") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ".");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_project_join_event") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_join_event_created_at") + " \"" + nextLine[2] + "\" ] ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_joining_user") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_joined") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -889,16 +1038,28 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "projects.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/projects.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/projects.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/projects.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("projects");
             while ((nextLine = reader.readNext()) != null) {
-                if(brokenLineCheck(schema, nextLine))
-                {
+                if (brokenLineCheck(schema, nextLine)) {
                     schema.integrityChecksNeg--; //re-testing
                     //changes have been made to the structure without documenting it in the schema... so here goes a check for that
-                    if(brokenLineCheck(schema,  Arrays.copyOf(nextLine, nextLine.length - 1))) {
+                    if (brokenLineCheck(schema, Arrays.copyOf(nextLine, nextLine.length - 1))) {
                         //System.out.println("Still broken...");
                         continue;
                     }
@@ -908,44 +1069,44 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_project") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "repository_url") + " \"" + nextLine[1] + "\";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_has_owner") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_project_name") + " \"" + nextLine[3] + "\";");
-                writer.newLine();
-                if(!nextLine[4].equals("")) {
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_project") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "repository_url") + " \"" + nextLine[1] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_has_owner") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_name") + " \"" + nextLine[3] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                if (!nextLine[4].equals("")) {
 
-                    writer.write(getPrefix(TAG_Semangit + "github_project_description") + " \"" + nextLine[4] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_description") + " \"" + nextLine[4] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                if(!nextLine[5].equals("N"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "repository_language") + " \"" + nextLine[5] + "\";");
-                    writer.newLine();
+                if (!nextLine[5].equals("N")) {
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "repository_language") + " \"" + nextLine[5] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                if(!nextLine[7].equals("N"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "github_forked_from") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[7]) + ";");
-                    writer.newLine();
+                if (!nextLine[7].equals("N")) {
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_forked_from") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[7]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                if(nextLine[8].equals("1"))
-                {
-                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " true;");
-                    writer.newLine();
+                if (nextLine[8].equals("1")) {
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_deleted") + " true;");
+                    currentTriple = currentTriple.concat("\n");
+                } else {
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_deleted") + " false;");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                else
-                {
-                    writer.write(getPrefix(TAG_Semangit + "github_project_deleted") + " false;");
-                    writer.newLine();
-                }
-                //Not taking "last update" into account, as we can easily compute that on a graph database
-                writer.write(getPrefix(TAG_Semangit + "repository_created_at") + " \"" + nextLine[6] + "\".");
-                writer.newLine();
+                //Not taking "last update" into account, as we can easily compute that on a graph database. TODO: reconsider?
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "repository_created_at") + " \"" + nextLine[6] + "\".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -960,7 +1121,20 @@ public class MainClass implements Runnable {
         try
         {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_commits.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_commits.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_commits.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_commits.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             
             String[] curLine = reader.readNext();
@@ -976,35 +1150,42 @@ public class MainClass implements Runnable {
 
                 if(abbreviated)
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
                 }
                 else
                 {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]));
                 }
                 if(curLine[0].equals(nextLine[0]))
                 {
                     abbreviated = true;
-                    writer.write(",");
+                    currentTriple = currentTriple.concat(",");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
                     abbreviated = false;
-                    writer.write(".");
+                    currentTriple = currentTriple.concat(".");
+                    currentTriple = currentTriple.concat("\n");
+                    printTriples(currentTriple, writers);
+                    currentTriple = "";
                 }
-                writer.newLine();
                 curLine = nextLine;
             }
             //handle last line of file
             if(abbreviated)
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
             }
             else
             {
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) + " " + getPrefix(TAG_Semangit + "pull_request_has_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) + ".");
             }
-            writer.close();
+            printTriples(currentTriple, writers);
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -1015,7 +1196,20 @@ public class MainClass implements Runnable {
     private static void parsePullRequestHistory(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_history.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_history.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_history.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_history.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("pull_request_history");
@@ -1025,25 +1219,31 @@ public class MainClass implements Runnable {
                     continue;
                 }
 
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_pull_request_action") + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_pull_request_action") + ";");
+                currentTriple = currentTriple.concat("\n");
                 //id, PR id, created at, action, actor
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_created_at") + " \"" + nextLine[2] + "\";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_id") + " " + nextLine[0] + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_type") + " \"" + nextLine[3] + "\" ] ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_action_created_at") + " \"" + nextLine[2] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_action_id") + " " + nextLine[0] + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_action_type") + " \"" + nextLine[3] + "\" ] ");
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_actor") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[4]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_actor") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[4]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[1].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_action_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[1]) + ".");
-                    writer.newLine();
+                    //TODO: Need some else part here to not end up with broken triples
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_action_pull_request") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[1]) + ".");
+                    currentTriple = currentTriple.concat("\n");
+                    printTriples(currentTriple, writers);
+                    currentTriple = "";
                 }
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -1056,7 +1256,20 @@ public class MainClass implements Runnable {
     private static void parsePullRequests(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_requests.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_requests.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_requests.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_requests.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("pull_requests");
@@ -1066,40 +1279,45 @@ public class MainClass implements Runnable {
                     continue;
                 }
 
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_pull_request") + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_pull_request") + ";");
+                currentTriple = currentTriple.concat("\n");
                 if(!nextLine[2].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "pull_request_base_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[2]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "pull_request_base_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[2]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[1].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "pull_request_head_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "pull_request_head_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[4].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "pull_request_base_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[4]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "pull_request_base_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[4]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[3].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "pull_request_head_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[3]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "pull_request_head_commit") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[3]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[5].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_id") + " " + nextLine[5] + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
-                writer.write(getPrefix(TAG_Semangit + "github_pull_request_intra_branch") + " ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_pull_request_intra_branch") + " ");
                 if(nextLine[6].equals("0"))
                 {
-                    writer.write("false");
+                    currentTriple = currentTriple.concat("false");
                 }
                 else{
-                    writer.write("true");
+                    currentTriple = currentTriple.concat("true");
                 }
-                writer.write(".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
@@ -1111,7 +1329,20 @@ public class MainClass implements Runnable {
         try
         {
             CSVReader reader = new CSVReader(new FileReader(path + "repo_labels.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/repo_labels.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_labels.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_labels.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("repo_labels");
@@ -1124,14 +1355,19 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_repo_label") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_repo_label_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_repo_label_name") + " \"" + nextLine[2] + "\".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Repolabelprefix) + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "github_repo_label") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_repo_label_project") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[1]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_repo_label_name") + " \"" + nextLine[2] + "\".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1146,7 +1382,20 @@ public class MainClass implements Runnable {
         try
         {
             CSVReader reader = new CSVReader(new FileReader(path + "repo_milestones.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/repo_milestones.ttl"), 32768);
+            //String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_milestones.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_milestones.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("repo_milestones");
@@ -1160,7 +1409,10 @@ public class MainClass implements Runnable {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1177,7 +1429,20 @@ public class MainClass implements Runnable {
         try
         {
             CSVReader reader = new CSVReader(new FileReader(path + "users.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/users.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/users.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/users.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("users");
@@ -1193,98 +1458,105 @@ public class MainClass implements Runnable {
 
                 //System.out.println(b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[0]));
                 String userURI = b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[0]);
-                writer.write(userURI + " a " + getPrefix(TAG_Semangit + "github_user") + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(userURI + " a " + getPrefix(TAG_Semangit + "github_user") + ";");
+                currentTriple = currentTriple.concat("\n");
                 if(!nextLine[1].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_login") + " \"" + nextLine[1] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_login") + " \"" + nextLine[1] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 /*if(!nextLine[2].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_name") + " \"" + nextLine[2] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_name") + " \"" + nextLine[2] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }*/
                 if(!nextLine[2].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_company") + " \"" + nextLine[2] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_company") + " \"" + nextLine[2] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[3].equals("N"))
-                writer.write(getPrefix(TAG_Semangit + "github_user_created_at") + " \"" + nextLine[3] + "\";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_created_at") + " \"" + nextLine[3] + "\";");
+                currentTriple = currentTriple.concat("\n");
 
-                writer.write(getPrefix(TAG_Semangit + "github_user_is_org") + " ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_is_org") + " ");
                 if(nextLine[4].equals("USR"))
                 {
-                    writer.write("false;");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat("false;");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
-                    writer.write("true;");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat("true;");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
-                writer.write(getPrefix(TAG_Semangit + "github_user_deleted") + " ");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_deleted") + " ");
                 if(nextLine[5].equals("0"))
                 {
-                    writer.write("false;");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat("false;");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
-                    writer.write("true;");
-                    writer.newLine();
-                }
-                writer.write(getPrefix(TAG_Semangit + "github_user_fake") + " ");
-                if(nextLine[6].equals("0"))
-                {
-                    writer.write("false.");
-                    writer.newLine();
-                }
-                else
-                {
-                    writer.write("true.");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat("true;");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[7].equals("N") && !nextLine[7].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_lng") + " \"" + nextLine[7] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_lng") + " \"" + nextLine[7] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[8].equals("N") && !nextLine[8].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_lat") + " \"" + nextLine[8] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_lat") + " \"" + nextLine[8] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[9].equals("N") && !nextLine[9].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_country_code") + " \"" + nextLine[9] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_country_code") + " \"" + nextLine[9] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[10].equals("N") && !nextLine[10].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_state") + " \"" + nextLine[10] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_state") + " \"" + nextLine[10] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[11].equals("N") && !nextLine[11].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_city") + " \"" + nextLine[11] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_city") + " \"" + nextLine[11] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[12].equals("N") && !nextLine[12].equals(""))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "github_user_location") + " \"" + nextLine[12] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_location") + " \"" + nextLine[12] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
+
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_fake") + " ");
+                if(nextLine[6].equals("0"))
+                {
+                    currentTriple = currentTriple.concat("false.");
+                    currentTriple = currentTriple.concat("\n");
+                }
+                else
+                {
+                    currentTriple = currentTriple.concat("true.");
+                    currentTriple = currentTriple.concat("\n");
+                }
+                printTriples(currentTriple, writers);
+                currentTriple = "";
+
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (ArrayIndexOutOfBoundsException e)
         {
@@ -1303,7 +1575,20 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "watchers.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/watchers.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/watchers.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/watchers.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("watchers");
@@ -1313,16 +1598,21 @@ public class MainClass implements Runnable {
                     continue;
                 }
 
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_user_or_project") + " true ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_follows") + " " + b64(getPrefix(TAG_Semangit  + TAG_Repoprefix) + nextLine[0]) + ".");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_follow_event") + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_following_since") + " \"" + nextLine[2] + "\";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_user_or_project") + " true ] " + getPrefix(TAG_Semangit + "github_follower") + " " + b64(getPrefix(TAG_Semangit  + TAG_Userprefix) + nextLine[1]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_follows") + " " + b64(getPrefix(TAG_Semangit  + TAG_Repoprefix) + nextLine[0]) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1340,7 +1630,20 @@ public class MainClass implements Runnable {
     {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "project_languages.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/project_languages.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_languages.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_languages.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             Map<String, Integer> languages = new HashMap<>();
             int langCtr = 0;
@@ -1360,23 +1663,28 @@ public class MainClass implements Runnable {
                 else
                 {
                     languages.put(nextLine[1], langCtr++);
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Langprefix) + langCtr) + " a " + getPrefix(TAG_Semangit + "programming_language") + ";");
-                    writer.newLine();
-                    writer.write(getPrefix(TAG_Semangit + "programming_language_name") + " \"" + nextLine[1] + "\".");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Langprefix) + langCtr) + " a " + getPrefix(TAG_Semangit + "programming_language") + ";");
+                    currentTriple = currentTriple.concat("\n");
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "programming_language_name") + " \"" + nextLine[1] + "\".");
+                    currentTriple = currentTriple.concat("\n");
                     currentLang = langCtr;
                 }
-                writer.write("[ a " + getPrefix(TAG_Semangit + "github_project_language") + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat("[ a " + getPrefix(TAG_Semangit + "github_project_language") + ";");
+                currentTriple = currentTriple.concat("\n");
                 //bytes, timestamp, then close brackets and do remaining two links
-                writer.write(getPrefix(TAG_Semangit + "github_project_language_bytes") + " " + nextLine[2] + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_project_language_timestamp") + " \"" + nextLine[3] + "\"] " + getPrefix(TAG_Semangit + "github_project_language_repo") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ";");
-                writer.newLine();
-                writer.write(getPrefix(TAG_Semangit + "github_project_language_is") + " " + b64(getPrefix(TAG_Semangit + TAG_Langprefix) + currentLang));
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_language_bytes") + " " + nextLine[2] + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_language_timestamp") + " \"" + nextLine[3] + "\"] " + getPrefix(TAG_Semangit + "github_project_language_repo") + " " + b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + nextLine[0]) + ";");
+                currentTriple = currentTriple.concat("\n");
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "github_project_language_is") + " " + b64(getPrefix(TAG_Semangit + TAG_Langprefix) + currentLang) + ".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (FileNotFoundException e)
         {
@@ -1405,7 +1713,20 @@ public class MainClass implements Runnable {
     private static void parseCommitComments(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_comments.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_comments.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
             int consecutiveFailedChecks = 0;
             ArrayList<String[]> failedComments = new ArrayList<>();
@@ -1437,38 +1758,43 @@ public class MainClass implements Runnable {
                 for (int i = 0; i < nextLine.length; i++) {
                     nextLine[i] = groovy.json.StringEscapeUtils.escapeJava(nextLine[i]);
                 }
-                writer.write(b64(getPrefix(TAG_Semangit + TAG_Commentprefix + "commit_") + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "comment") + ";");
-                writer.newLine();
+                currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commentprefix + "commit_") + nextLine[0]) + " a " + getPrefix(TAG_Semangit + "comment") + ";");
+                currentTriple = currentTriple.concat("\n");
                 if(!nextLine[1].equals("N") && !nextLine[1].equals("")){
-                    writer.write(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1]) + ";"); //comment for a commit
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[1]) + ";"); //comment for a commit
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[2].equals("N") && !nextLine[2].equals("")) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[3].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[3] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[3] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[4].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "comment_line") + " " + nextLine[4] + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_line") + " " + nextLine[4] + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
                 if(!nextLine[5].equals("N"))
                 {
-                    writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[5] + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[5] + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
 
-                writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
-                writer.newLine();
+                currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[7] + "\".");
+                currentTriple = currentTriple.concat("\n");
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1481,7 +1807,20 @@ public class MainClass implements Runnable {
     private static void parseIssueComments(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_comments.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/issue_comments.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_comments.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_comments.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             TableSchema schema = schemata.get("issue_comments");
@@ -1493,24 +1832,29 @@ public class MainClass implements Runnable {
 
 
                 //TODO: Let's verify the integrity of the RDF output of this
-                writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
-                writer.newLine();
+                currentTriple = currentTriple.concat("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Issueprefix) + nextLine[0]) + ";"); //comment for an issue
+                currentTriple = currentTriple.concat("\n");
                 
-                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[3] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 
                 if(!nextLine[1].equals("") && !nextLine[1].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
                     System.out.println("Warning! Invalid user found in parseIssueComments. Using MAX_INT as userID.");
-                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
+                    currentTriple = currentTriple.concat("\n");
                 }
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1524,7 +1868,20 @@ public class MainClass implements Runnable {
     private static void parsePullRequestComments(String path) {
         try {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_comments.csv"));
-            BufferedWriter writer = new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768);
+            String currentTriple = "";
+            ArrayList<BufferedWriter> writers = new ArrayList<>();
+            if(samplingPercentages.size() < 2)
+            {
+                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768));
+            }
+            else
+            {
+                for(float f : samplingPercentages)
+                {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_comments.ttl"), 32768));
+                }
+            }
+
             String[] nextLine;
 
             int consecutiveFailedChecks = 0;
@@ -1560,43 +1917,48 @@ public class MainClass implements Runnable {
                 }
                 //TODO: Let's verify the integrity of the RDF output of this
                 if(!nextLine[0].equals("")) {
-                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0])); //comment for a pull request                     
-                    writer.write(",");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat("[" + getPrefix(TAG_Semangit + "comment_for") + " " + b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + nextLine[0])); //comment for a pull request
+                    currentTriple = currentTriple.concat(",");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
-                    writer.write("[" + getPrefix(TAG_Semangit + "comment_for") + " ");
+                    currentTriple = currentTriple.concat("[" + getPrefix(TAG_Semangit + "comment_for") + " ");
                 }
                 if(!nextLine[5].equals("") && !nextLine[5].equals("N")) {
-                    writer.write(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + nextLine[5]) + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[6].equals("") && !nextLine[6].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_created_at") + " \"" + nextLine[6] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[3].equals("") && !nextLine[3].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_pos") + " " + nextLine[3] + ";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[4].equals("") && !nextLine[4].equals("N")) {
 
-                    writer.write(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_body") + " \"" + nextLine[4] + "\";");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 if(!nextLine[1].equals("") && !nextLine[1].equals("N")) {
-                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) + "] a " + getPrefix(TAG_Semangit + "comment") + ".");
+                    currentTriple = currentTriple.concat("\n");
                 }
                 else
                 {
                     System.out.println("Warning! Invalid user found in parsePullRequestComments. Using MAX_INT as userID.");
-                    writer.write(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
-                    writer.newLine();
+                    currentTriple = currentTriple.concat(getPrefix(TAG_Semangit + "comment_author") + " " + b64(getPrefix(TAG_Semangit + TAG_Userprefix) + Integer.MAX_VALUE + "] a " + getPrefix(TAG_Semangit + "comment") + "."));//comment for [0]
+                    currentTriple = currentTriple.concat("\n");
                 }
+                printTriples(currentTriple, writers);
+                currentTriple = "";
             }
-            writer.close();
+            for(BufferedWriter w : writers)
+            {
+                w.close();
+            }
         }
         catch (Exception e)
         {
@@ -1715,7 +2077,7 @@ public class MainClass implements Runnable {
             case "watchers":parseWatchers(this.path);break;
             default: throw new RuntimeException("Unknown file name specified! Which file to parse?!");
         }
-        //System.out.println("Finished working on " + this.workOnFile);
+        System.out.println("Finished working on " + this.workOnFile);
     }
 
     public static void main(String[] args)
@@ -1788,7 +2150,6 @@ public class MainClass implements Runnable {
                         samplingPercentages.add(Float.parseFloat(rightOfEql));
                         if(samplingPercentages.get(samplingPercentages.size() - 1) > 0 && samplingPercentages.get(samplingPercentages.size() -1) <= 1)
                         {
-                            //TODO: Mehrere samples in einem Durchlauf erlauben. Mehrere percentages pro run in einem stack speichern
                             percentageGiven = true;
                         }
                         else {
