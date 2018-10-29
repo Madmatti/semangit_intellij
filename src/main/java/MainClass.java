@@ -5,18 +5,23 @@ import java.util.*;
 
 public class MainClass implements Runnable {
 
-    //TODO: Replace currentTriple = currentTriple.concat by string builder solutions. Concatenating strings copies them!!!
-
     private String workOnFile;
     private String path;
     private static boolean debug = false;
     private static int sampling = 0;
-//    private static float samplingPercentage = 0.1f;
-    private static Random rnd = new Random();
     private static ArrayList<Float> samplingPercentages = new ArrayList<>();
 
+    //a parameter to better examine the output of the program. Does not create a combined.ttl file, but keeps all output in the original .tll files
+    private static boolean mergeOutput = true;
+
+    private static Map<String, BufferedWriter> graphWriters = new HashMap<>();
+    private static String rdfPath;
+
+    private static Random rnd = new Random();
+
+
     //private static final String PREFIX_Semangit = "<http://www.semangit.de/ontology/>";
-    private static final String TAG_Semangit = "semangit:";
+    private static final String TAG_Semangit = "semangit:"; //TODO: Speed option: Instead of concatenating "semangit:" to all IDs at runtime, do this once at the beginning for all identifiers.
     private static final String TAG_Userprefix = "ghuser_";
     private static final String TAG_Repoprefix = "ghrepo_";
     private static final String TAG_Commitprefix = "ghcom_";
@@ -350,16 +355,16 @@ public class MainClass implements Runnable {
             // for forward/backward conversion, see https://stackoverflow.com/a/26172045/9743294
             StringBuilder sb = new StringBuilder();
             try {
-                String rightOfComma = input.substring(input.lastIndexOf(":") + 1);
-                String leftOfComma = input.substring(0, input.lastIndexOf(":") + 1);
+                String rightOfColon = input.substring(input.indexOf(":") + 1);
+                String leftOfColon = input.substring(0, input.indexOf(":") + 1);
 
-                int in = Integer.parseInt(rightOfComma);
+                int in = Integer.parseInt(rightOfColon);
                 int j = (int) Math.ceil(Math.log(in) / Math.log(alphabet64.length()));
                 for (int i = 0; i < j; i++) {
                     sb.append(alphabet64.charAt(in % alphabet64.length()));
                     in /= alphabet64.length();
                 }
-                return leftOfComma + sb.toString();
+                return leftOfColon + sb.reverse().toString();
             } catch (Exception e) {
                 errorCtr++;
                 e.printStackTrace();
@@ -409,8 +414,7 @@ public class MainClass implements Runnable {
             switch (sampling)
             {
                 case 0: writers.get(0).write(currentTriple);break; //no sampling
-                case 1: break;    //head -- REMOVED! Doing that via bash instead!
-                case 2: break;    //tail -- REMOVED! Doing that via bash instead!
+                //cases 1 and 2 (head/tail sampling) removed. doing those via bash instead for better performance
                 case 3:           //random sampling with given percentage(s)
                     if(samplingPercentages.size() == 1) //only one sample to be generated
                     {
@@ -429,6 +433,48 @@ public class MainClass implements Runnable {
                             }
                         }
                     }
+                case 4: case 5: //connected & bfs
+                //get last 2 digits of identifier, if its not a blank node (i.e. has no identifier)
+                if(currentTriple.charAt(2) == '[' || currentTriple.charAt(0) == '[' || currentTriple.charAt(1) == '[')
+                {
+                    return;
+                }
+                int index = currentTriple.indexOf(" "); //end of identifier
+                String identifier = currentTriple.substring(index - 2, index);
+                if(identifier.contains(":"))
+                {
+                    if(identifier.charAt(0) == ':')
+                    {
+                        identifier = identifier.replace(':', '0');
+                    }
+                    else
+                    {
+                        identifier = "00";
+                    }
+                }
+                if(!graphWriters.containsKey(identifier)) {
+                    File file = new File(rdfPath + identifier.charAt(0) + "/" + identifier.charAt(1) + ".ttl");
+                    if (!file.exists()) {
+                        File parentDirec = new File(rdfPath + identifier.charAt(0) + "/");
+                        if (!parentDirec.exists()) {
+                            //noinspection ResultOfMethodCallIgnored
+                            parentDirec.mkdirs();
+                        }
+                    }
+                    BufferedWriter wr = new BufferedWriter(new FileWriter(file));
+                    graphWriters.put(identifier, wr);
+                    wr.write(currentTriple); //avoid null pointer exception
+                    return;
+                }
+                graphWriters.get(identifier).write(currentTriple);
+                /*if(w == null)
+                {
+                    w = new BufferedWriter(new FileWriter(rdfPath + identifier.charAt(0) + "/" + identifier.charAt(1)), 32768);
+                    graphWriters.put(identifier, w);
+                }
+                w.write(currentTriple);*/
+                //TODO: Any kind of closing/reopening? Could create a FileWriter with append flag set to true
+                    break;
             }
         }
         catch (java.io.IOException e)
@@ -475,15 +521,14 @@ public class MainClass implements Runnable {
                     currentTriple.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1])); //only specifying next object. subject/predicate are abbreviated
                 }
                 if (curLine[0].equals(nextLine[0])) {
-                    currentTriple.append(","); //abbreviating subject and predicate for next line
+                    currentTriple.append(",\n"); //abbreviating subject and predicate for next line
                     abbreviated = true;
                 } else {
-                    currentTriple.append("."); //cannot use turtle abbreviation here
+                    currentTriple.append(".\n"); //cannot use turtle abbreviation here
                     printTriples(currentTriple.toString(), writers);
                     currentTriple.setLength(0);
                     abbreviated = false;
                 }
-                currentTriple.append("\n");
                 curLine = nextLine;
             }
             //handle last line of file
@@ -493,6 +538,7 @@ public class MainClass implements Runnable {
                 } else {
                     currentTriple.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) ).append( "."); //only specifying next object. subject/predicate are abbreviated
                 }
+                currentTriple.append("\n");
                 printTriples(currentTriple.toString(), writers);
             }
             for(BufferedWriter w : writers) {
@@ -2132,6 +2178,8 @@ public class MainClass implements Runnable {
                         case "head": sampling = 1;break;
                         case "tail": sampling = 2;break;
                         case "random": sampling = 3;break;
+                        case "connected": sampling = 4;mergeOutput=false;break;
+                        case "bfs": sampling = 5;mergeOutput=false;break;
                         default: sampling = 0; samplingGiven = false;
                         System.out.println("Invalid sampling method. Available methods are head, tail and random. Using no sampling.");
                     }
@@ -2147,7 +2195,7 @@ public class MainClass implements Runnable {
                             percentageGiven = true;
                         }
                         else {
-                            System.out.println("Percentage needs to be (o, 1]");
+                            System.out.println("Percentage needs to be (0, 1]");
                             System.exit(1);
                         }
                     }
@@ -2156,13 +2204,17 @@ public class MainClass implements Runnable {
                         System.exit(1);
                     }
                 }
+                else if(s.toLowerCase().contains("-nomerging"))
+                {
+                    mergeOutput = false;
+                }
                 else
                 {
                     if(!s.equals(args[0]))
                     {
                         System.out.println("Unknown parameter: " + s);
-                        System.out.println("Usage: java -cp com.semangit_main.jar Mainass <path/to/input/directory> [-base=64|32|16|10] [-noprefix] [-sampling=head|tail|random] [-percentage=X]");
-                        System.out.println("percentage parameter is obligatory, if sampling parameter is given.");
+                        System.out.println("Usage: java -cp com.semangit_main.jar Mainass <path/to/input/directory> [-base=64|32|16|10] [-noprefix] [-sampling=random|connected|bfs] [-percentage=X] [-nomerging]");
+                        System.out.println("Note that percentage parameter is obligatory, if sampling method is set to random. Otherwise it will be ignored.");
                     }
                 }
             }
@@ -2191,29 +2243,11 @@ public class MainClass implements Runnable {
         }
         try {
             File index = new File(args[0] + "rdf");
-            //will take care of the deletion via bash
-            /*if (index.exists()) {
-                System.out.println("rdf/ already exists. Deleting!");
-                String[] entries = index.list();
-                if (entries != null) {
-                    for (String s : entries) {
-                        File currentFile = new File(index.getPath(), s);
-                        if (!currentFile.delete()) {
-                            System.out.println("Failed to delete existing file: " + index.getPath() + s);
-                            System.exit(1);
-                        }
-                    }
-                }
-                if (!index.delete()) {
-                    System.out.println("Unable to delete rdf/ directory after deleting all entries.");
-                    System.exit(1);
-                }
-            }*/
             if (!index.exists() && !index.mkdirs()) {
                 System.out.println("Unable to create " + args[0] + "rdf/ directory. Exiting.");
                 System.exit(1);
             }
-
+            rdfPath = args[0] + "rdf/";
             initPrefixTable();
             parseSQLSchema(args[0]);
 
@@ -2241,86 +2275,80 @@ public class MainClass implements Runnable {
             processes.add(new Thread(new MainClass("repo_labels", args[0])));
             processes.add(new Thread(new MainClass("repo_milestones", args[0])));
             processes.add(new Thread(new MainClass("watchers", args[0])));
-            for(Thread t : processes)
-            {
+            for (Thread t : processes) {
                 try {
                     t.start();
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     e.printStackTrace();
                     errorCtr++;
                 }
             }
-            for (Thread t : processes)
-            {
-                try{
+            for (Thread t : processes) {
+                try {
                     t.join();
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     e.printStackTrace();
                     errorCtr++;
                 }
             }
 
             String correctPath = args[0].concat("rdf/");
+            if (mergeOutput) {
+                appendFileToOutput(correctPath, "project_commits.ttl");
+                appendFileToOutput(correctPath, "commit_comments.ttl");
+                appendFileToOutput(correctPath, "commits.ttl");
+                appendFileToOutput(correctPath, "commit_parents.ttl");
+                appendFileToOutput(correctPath, "issue_comments.ttl");
+                appendFileToOutput(correctPath, "pull_request_comments.ttl");
+                appendFileToOutput(correctPath, "issue_events.ttl");
+                appendFileToOutput(correctPath, "issues.ttl");
+                appendFileToOutput(correctPath, "project_members.ttl");
+                appendFileToOutput(correctPath, "project_languages.ttl");
+                appendFileToOutput(correctPath, "projects.ttl");
+                appendFileToOutput(correctPath, "pull_request_history.ttl");
+                appendFileToOutput(correctPath, "pull_request_commits.ttl");
+                appendFileToOutput(correctPath, "pull_requests.ttl");
+                appendFileToOutput(correctPath, "repo_labels.ttl");
+                appendFileToOutput(correctPath, "repo_milestones.ttl");
+                appendFileToOutput(correctPath, "issue_labels.ttl");
+                appendFileToOutput(correctPath, "watchers.ttl");
+                appendFileToOutput(correctPath, "organization_members.ttl");
+                appendFileToOutput(correctPath, "followers.ttl");
+                appendFileToOutput(correctPath, "users.ttl");
 
-            appendFileToOutput(correctPath, "project_commits.ttl");
-            appendFileToOutput(correctPath, "commit_comments.ttl");
-            appendFileToOutput(correctPath, "commits.ttl");
-            appendFileToOutput(correctPath, "commit_parents.ttl");
-            appendFileToOutput(correctPath, "issue_comments.ttl");
-            appendFileToOutput(correctPath, "pull_request_comments.ttl");
-            appendFileToOutput(correctPath, "issue_events.ttl");
-            appendFileToOutput(correctPath, "issues.ttl");
-            appendFileToOutput(correctPath, "project_members.ttl");
-            appendFileToOutput(correctPath, "project_languages.ttl");
-            appendFileToOutput(correctPath, "projects.ttl");
-            appendFileToOutput(correctPath, "pull_request_history.ttl");
-            appendFileToOutput(correctPath, "pull_request_commits.ttl");
-            appendFileToOutput(correctPath, "pull_requests.ttl");
-            appendFileToOutput(correctPath, "repo_labels.ttl");
-            appendFileToOutput(correctPath, "repo_milestones.ttl");
-            appendFileToOutput(correctPath, "issue_labels.ttl");
-            appendFileToOutput(correctPath, "watchers.ttl");
-            appendFileToOutput(correctPath, "organization_members.ttl");
-            appendFileToOutput(correctPath, "followers.ttl");
-            appendFileToOutput(correctPath, "users.ttl");
+                if (samplingPercentages.size() > 1) {
+                    for (float f : samplingPercentages) {
+                        File index2 = new File(args[0] + "/rdf/" + f);
 
-            if(samplingPercentages.size() > 1) {
-                for (float f : samplingPercentages) {
-                    File index2 = new File(args[0] + "/rdf/" + f);
-
-                    if (index2.exists()) {
-                        String[] entries = index2.list();
-                        if (entries != null) {
-                            for (String s : entries) {
-                                File currentFile = new File(index2.getPath(), s);
-                                if (s.equals("combined.ttl")) {
-                                    continue;
-                                }
-                                if (!currentFile.delete()) {
-                                    System.out.println("Failed to delete existing file: " + index2.getPath() + s);
-                                    System.exit(1);
+                        if (index2.exists()) {
+                            String[] entries = index2.list();
+                            if (entries != null) {
+                                for (String s : entries) {
+                                    File currentFile = new File(index2.getPath(), s);
+                                    if (s.equals("combined.ttl")) {
+                                        continue;
+                                    }
+                                    if (!currentFile.delete()) {
+                                        System.out.println("Failed to delete existing file: " + index2.getPath() + s);
+                                        System.exit(1);
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
-            else {
-                if (index.exists()) {
-                    String[] entries = index.list();
-                    if (entries != null) {
-                        for (String s : entries) {
-                            File currentFile = new File(index.getPath(), s);
-                            if (s.equals("combined.ttl")) {
-                                continue;
-                            }
-                            if (!currentFile.delete()) {
-                                System.out.println("Failed to delete existing file: " + index.getPath() + s);
-                                System.exit(1);
+                } else {
+                    if (index.exists()) {
+                        String[] entries = index.list();
+                        if (entries != null) {
+                            for (String s : entries) {
+                                File currentFile = new File(index.getPath(), s);
+                                if (s.equals("combined.ttl")) {
+                                    continue;
+                                }
+                                if (!currentFile.delete()) {
+                                    System.out.println("Failed to delete existing file: " + index.getPath() + s);
+                                    System.exit(1);
+                                }
                             }
                         }
                     }
