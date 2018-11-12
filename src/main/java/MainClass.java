@@ -8,6 +8,7 @@ public class MainClass implements Runnable {
     private String workOnFile;
     private String path;
     private static boolean debug = false;
+    private static boolean noUserTexts = false;
     private static int sampling = 0;
     private static ArrayList<Float> samplingPercentages = new ArrayList<>();
 
@@ -41,7 +42,7 @@ public class MainClass implements Runnable {
     {
         //ProjectCommits
         prefixTable.put(TAG_Semangit + TAG_Repoprefix, ""); //most common prefix gets empty prefix in output
-        prefixTable.put(TAG_Semangit + "repository_has_commit", "a");
+        prefixTable.put(TAG_Semangit + "repository_has_commit", "a"); //TODO: wrong way around?!
         prefixTable.put(TAG_Semangit + TAG_Commitprefix, "b");
 
 
@@ -200,9 +201,16 @@ public class MainClass implements Runnable {
                 System.out.println("Prefix for " + s + " missing.");
             }
             int ctr = 0;
-            if(prefixCtr.get(s) != null)
+            try {
+                if (prefixCtr.containsKey(s)) {
+                    ctr = prefixCtr.get(s);
+                }
+            }
+            catch (NullPointerException e)
             {
-                ctr = prefixCtr.get(s);
+
+                //System.out.println("For some random reason, no prefix counter for " + s + " could be retrieved.");
+                //e.printStackTrace();
             }
             prefixCtr.put(s, ++ctr);
             return prefixTable.get(s) + ":";
@@ -466,6 +474,7 @@ public class MainClass implements Runnable {
                     wr.write(currentTriple); //avoid null pointer exception
                     return;
                 }
+                //TODO: sometimes causes random nullpointerexceptions at start
                 graphWriters.get(identifier).write(currentTriple);
                 /*if(w == null)
                 {
@@ -490,15 +499,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_parents.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_parents.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_parents.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_parents.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_parents.ttl"), 32768));
+                    }
                 }
             }
             String[] nextLine;
@@ -558,15 +565,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "commits.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commits.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commits.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/commits.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commits.ttl"), 32768));
+                    }
                 }
             }
             String[] nextLine;
@@ -609,18 +614,15 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "followers.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/followers.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/followers.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/followers.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/followers.ttl"), 32768));
+                    }
                 }
             }
-
 
             String[] nextLine;
 
@@ -661,18 +663,15 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_events.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_events.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_events.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_events.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_events.ttl"), 32768));
+                    }
                 }
             }
-
             String[] nextLine;
 
             TableSchema schema = schemata.get("issue_events");
@@ -719,15 +718,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_labels.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_labels.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_labels.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_labels.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_labels.ttl"), 32768));
+                    }
                 }
             }
 
@@ -797,15 +794,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "issues.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issues.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issues.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/issues.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issues.ttl"), 32768));
+                    }
                 }
             }
 
@@ -895,18 +890,15 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "organization_members.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/organization_members.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/organization_members.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/organization_members.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/organization_members.ttl"), 32768));
+                    }
                 }
             }
-
             String[] nextLine;
 
             TableSchema schema = schemata.get("organization_members");
@@ -946,15 +938,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "project_commits.csv"));
             StringBuilder sb = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_commits.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_commits.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_commits.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_commits.ttl"), 32768));
+                    }
                 }
             }
 
@@ -993,18 +983,18 @@ public class MainClass implements Runnable {
                 }
             }
 
-            System.out.println("Working on last line");
-
             //handle last line
             if(abbreviated) //abbreviated in previous step. Only need to print object now
             {
-                sb.append(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) ).append( "."); //one commit for multiple repositories (branching / merging)
+                sb.append(b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) ); //one commit for multiple repositories (branching / merging)
             }
             else //no abbreviation occurred. Full subject predicate object triple printed
             {
-                sb.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) ).append( " " ).append( getPrefix(TAG_Semangit + "repository_has_commit") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) ).append( ".");
+                sb.append(b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[0]) ).append( " " ).append( getPrefix(TAG_Semangit + "repository_has_commit") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Repoprefix) + curLine[1]) );
             }
+            sb.append(".\n");
             printTriples(sb.toString(), writers);
+            //System.out.println("Is this broken? " + sb.toString());
 
             for(BufferedWriter w : writers)
             {
@@ -1027,15 +1017,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "project_members.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_members.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_members.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_members.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_members.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1080,15 +1068,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "projects.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/projects.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/projects.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/projects.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/projects.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1163,15 +1149,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_commits.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_commits.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_commits.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_commits.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_commits.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1219,7 +1203,7 @@ public class MainClass implements Runnable {
             }
             else
             {
-                currentTriple.append(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) ).append( " " ).append( getPrefix(TAG_Semangit + "pull_request_has_commit") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) ).append( ".");
+                currentTriple.append(b64(getPrefix(TAG_Semangit + TAG_Pullrequestprefix) + curLine[0]) ).append( " " ).append( getPrefix(TAG_Semangit + "pull_request_has_commit") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Commitprefix) + curLine[1]) ).append( ".\n");
             }
             printTriples(currentTriple.toString(), writers);
             for(BufferedWriter w : writers)
@@ -1238,15 +1222,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_history.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_history.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_history.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_history.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_history.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1298,15 +1280,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_requests.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_requests.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_requests.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_requests.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_requests.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1371,15 +1351,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "repo_labels.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_labels.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_labels.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_labels.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_labels.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1424,15 +1402,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "repo_milestones.csv"));
             //StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_milestones.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_milestones.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/repo_milestones.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/repo_milestones.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1471,15 +1447,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "users.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/users.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/users.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/users.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/users.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1617,15 +1591,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "watchers.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/watchers.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/watchers.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/watchers.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/watchers.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1672,15 +1644,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "project_languages.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_languages.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_languages.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/project_languages.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/project_languages.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1755,15 +1725,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "commit_comments.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_comments.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/commit_comments.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/commit_comments.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1808,10 +1776,11 @@ public class MainClass implements Runnable {
                     currentTriple.append(getPrefix(TAG_Semangit + "comment_author") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[2]) ).append( ";");
                     currentTriple.append("\n");
                 }
-                if(!nextLine[3].equals("N"))
-                {
-                    currentTriple.append(getPrefix(TAG_Semangit + "comment_body") ).append( " \"" ).append( nextLine[3] ).append( "\";");
-                    currentTriple.append("\n");
+                if(!noUserTexts) {
+                    if (!nextLine[3].equals("N")) {
+                        currentTriple.append(getPrefix(TAG_Semangit + "comment_body")).append(" \"").append(nextLine[3]).append("\";");
+                        currentTriple.append("\n");
+                    }
                 }
 
                 if(!nextLine[4].equals("N"))
@@ -1849,15 +1818,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "issue_comments.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_comments.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_comments.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/issue_comments.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/issue_comments.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1910,15 +1877,13 @@ public class MainClass implements Runnable {
             CSVReader reader = new CSVReader(new FileReader(path + "pull_request_comments.csv"));
             StringBuilder currentTriple = new StringBuilder();
             ArrayList<BufferedWriter> writers = new ArrayList<>();
-            if(samplingPercentages.size() < 2)
-            {
-                writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768));
-            }
-            else
-            {
-                for(float f : samplingPercentages)
-                {
-                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_comments.ttl"), 32768));
+            if(sampling < 4) {
+                if (samplingPercentages.size() < 2) {
+                    writers.add(new BufferedWriter(new FileWriter(path + "rdf/pull_request_comments.ttl"), 32768));
+                } else {
+                    for (float f : samplingPercentages) {
+                        writers.add(new BufferedWriter(new FileWriter(path + "rdf/" + f + "/pull_request_comments.ttl"), 32768));
+                    }
                 }
             }
 
@@ -1977,10 +1942,12 @@ public class MainClass implements Runnable {
                     currentTriple.append(getPrefix(TAG_Semangit + "comment_pos") ).append( " " ).append( nextLine[3] ).append( ";");
                     currentTriple.append("\n");
                 }
-                if(!nextLine[4].equals("") && !nextLine[4].equals("N")) {
+                if(!noUserTexts) {
+                    if (!nextLine[4].equals("") && !nextLine[4].equals("N")) {
 
-                    currentTriple.append(getPrefix(TAG_Semangit + "comment_body") ).append( " \"" ).append( nextLine[4] ).append( "\";");
-                    currentTriple.append("\n");
+                        currentTriple.append(getPrefix(TAG_Semangit + "comment_body")).append(" \"").append(nextLine[4]).append("\";");
+                        currentTriple.append("\n");
+                    }
                 }
                 if(!nextLine[1].equals("") && !nextLine[1].equals("N")) {
                     currentTriple.append(getPrefix(TAG_Semangit + "comment_author") ).append( " " ).append( b64(getPrefix(TAG_Semangit + TAG_Userprefix) + nextLine[1]) ).append( "] a " ).append( getPrefix(TAG_Semangit + "comment") ).append( ".");
@@ -2007,10 +1974,279 @@ public class MainClass implements Runnable {
         }
     }
 
+
     /**
-     * Files still to be converted:
-     *     repo_milestones //MISSING IN DUMP!
+     * Deprecated!
+     * This function used to be used for BFS / Connected graph sampling. We're not doing this in the parser anymore
      */
+    private static ArrayList<String> extractConnectedEntities(ArrayList<String> inputTriple)
+    {
+        ArrayList<String> output = new ArrayList<>();
+        for (String s : inputTriple)
+        {
+            if(s.contains("\""))
+            {
+                continue;
+            }
+            //get position of last colon in a row - see if its a resource, i.e. not something like boolean or number. Strings cannot occur here anymore
+            int indexColon = s.lastIndexOf(":"); //only interested in objects! Let's check if it is an object or a predicate
+            if(s.charAt(indexColon + 1) == ' ') //it's a predicate
+            {
+                continue;
+            }
+            int indexSpaceBeforeColon = s.lastIndexOf(' ', indexColon);
+            int indexTerminating = s.indexOf(" ", indexColon);
+            if(indexTerminating < 0)
+            {
+                indexTerminating = s.indexOf(".", indexColon);
+            }
+            if(indexTerminating < 0)
+            {
+                indexTerminating = s.indexOf(";", indexColon);
+            }
+            if(indexTerminating < 0)
+            {
+                indexTerminating = s.indexOf(",", indexColon);
+            }
+            if(indexTerminating < 0)
+            {
+                //System.out.println("No entity found in line: " + s);
+                continue;
+            }
+            if(indexTerminating == indexColon + 1)
+            {
+                //System.out.println("This line is not a reference to another entity: " + s);
+                continue;
+            }
+            String URI = s.substring(indexSpaceBeforeColon + 1, indexTerminating);
+            output.add(URI);
+        }
+        return output;
+    }
+
+
+    /**
+     * Deprecated!
+     * This function used to be used for BFS / Connected graph sampling. We're not doing this in the parser anymore
+     */
+    private static String entityToIdentifier(String entity)
+    {
+        entity = entity.substring(entity.length() -2);
+        if(entity.contains(":"))
+        {
+            if(entity.charAt(0) == ':')
+            {
+                entity = entity.replace(':', '0');
+            }
+            else
+            {
+                entity = "00";
+            }
+        }
+        return entity;
+    }
+
+    /**
+     * Deprecated!
+     * This function used to be used for BFS / Connected graph sampling. We're not doing this in the parser anymore
+     */
+    private static void connectedSubgraph(String directory)
+    {
+
+        //random file as entry point:
+        Random rand = new Random();
+        int randomFile = rand.nextInt(63*63);
+        String filePath;
+        String alphabet64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+        StringBuilder sb = new StringBuilder();
+        try {
+            int j = (int) Math.ceil(Math.log(randomFile) / Math.log(alphabet64.length()));
+            for (int i = 0; i < j; i++) {
+                sb.append(alphabet64.charAt(randomFile % alphabet64.length()));
+                randomFile /= alphabet64.length();
+            }
+            filePath = sb.reverse().toString();
+            filePath = "rdf/" + filePath.charAt(0) + "/" + filePath.charAt(1) + ".ttl";
+        } catch (Exception e) {
+            errorCtr++;
+            e.printStackTrace();
+            return;
+        }
+        System.out.println("Using random entry point: " + filePath);
+
+
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(directory + "/rdf/subgraph.ttl"), 32768);
+
+            //initialization step. Work on first triple
+            BufferedReader br = new BufferedReader(new FileReader(directory + filePath));
+
+            LinkedList<String> toVisit = new LinkedList<>();
+            ArrayList<String> currentTriple = new ArrayList<>();
+            String currentLine;
+            while ((currentLine = br.readLine()) != null) {
+                currentTriple.add(currentLine);
+                if (currentLine.endsWith(".")) {
+                    if(extractConnectedEntities(currentTriple).size() > 20) //TODO: try to avoid bad entry point
+                    {
+                        break;
+                    }
+                    currentTriple.clear();
+                }
+            }
+            //extract other URIs to include in our subgraph
+            ArrayList<String> connectedTriples = extractConnectedEntities(currentTriple);
+            for(String s : connectedTriples)
+            {
+                //s = entityToIdentifier(s);
+                if(!toVisit.contains(s))
+                {
+                    toVisit.add(s); //TODO: may be slow! HashMap might be better solution
+                }
+            }
+
+
+            //TODO: Add some "Found good entry point" check
+            if(!toVisit.isEmpty()){
+                br.close();
+            }
+            else { //restart with new random entry point
+                connectedSubgraph(directory);
+                return;
+            }
+
+            for(String s : currentTriple)
+            {
+                writer.write(s);
+                writer.newLine();
+            }
+
+            //iteration step
+            int depth = 0;
+            while (!toVisit.isEmpty() && depth < 5) //TODO: replace with parameter
+            {
+                //count which file is most prominent
+                HashMap<String, ArrayList<String>> counters = new HashMap<>();
+                for(String s : toVisit)
+                {
+                    //System.out.println("Depth: " + depth + ". toVisit contains: " + s);
+                    //we're only interested in last two letters, as they act as hashing value - i.e. the file in which they are stored
+                    String id = entityToIdentifier(s);
+                    if(!counters.containsKey(id))
+                    {
+                        ArrayList<String> e = new ArrayList<>();
+                        e.add(id);
+                        counters.put(id, e);
+                    }
+                    else //increment by one
+                    {
+                        //not sure if this actually updates, or if i need to put again
+                        counters.get(id).add(s);
+                    }
+                }
+
+                //we collected all "To be visited" entities and grouped them by the files in which they are stored
+                //next up: decide which file to work on next.
+                final Set<Map.Entry<String, ArrayList<String>>> entries = counters.entrySet();
+                String bestFileIdentifier = "";
+                int bestIdentifierCtr = 0;
+                //ArrayList<String> bestIdentifiers = new ArrayList<>();
+                for(Map.Entry<String, ArrayList<String>> entry : entries)
+                {
+                    if(entry.getValue().size() > bestIdentifierCtr)
+                    {
+                        bestIdentifierCtr = entry.getValue().size();
+                        bestFileIdentifier = entry.getKey();
+                        //bestIdentifiers = entry.getValue();
+                        //System.out.println("Setting best file identifier to " + bestFileIdentifier);
+                    }
+                }
+                if(bestIdentifierCtr > 0) {
+                    //build regex test string against which to test lines in the file we will search next
+                    String testString = "(?:";
+                    ArrayList<String> toBeRemoved = new ArrayList<>(); //saves which elements need to be removed from linkedList. Avoids ConcurrentModificationException
+                    for (String s : toVisit) {
+                        if(s.endsWith(bestFileIdentifier)) {
+                            //System.out.println("Removing " + s + " from toVisit.");
+                            //we will "visit" all entries stored in this file in the order they are stored. So it's not really a BFS
+                            toBeRemoved.add(s);
+
+                            testString += s + "|";
+                        }
+                    }
+                    for(String s : toBeRemoved)
+                    {
+                        toVisit.remove(s);
+                    }
+                    testString = testString.substring(0, testString.length() - 1); //remove trailing pipe
+                    testString += ").*";
+                    //System.out.println("Our regex test string is: " + testString);
+                    //open file bestFileIdentifier and extract identifiers from adjacent entities of those in bestIdentifiers.
+                    try {
+                        depth++;
+                        BufferedReader reader = new BufferedReader(new FileReader(directory + "rdf/" + bestFileIdentifier.charAt(0) + "/" + bestFileIdentifier.charAt(1) + ".ttl"));
+                        //System.out.println("Now working on file " + directory + "rdf/" + bestFileIdentifier.charAt(0) + "/" + bestFileIdentifier.charAt(1) + ".ttl");
+                        //if line starts with any of the identifiers in bestIdentifiers (and then succeeds with a space)...
+                        String nextLine;
+                        boolean inspectSubject = true;
+                        boolean recordingMatchingTriple = false;
+                        ArrayList<String> recordedTriple = new ArrayList<>();
+                        while((nextLine = reader.readLine()) != null)
+                        {
+                            if(inspectSubject || recordingMatchingTriple) {
+                                if (nextLine.matches(testString)) {
+                                    //System.out.println("Found matching entity! " + nextLine);
+                                    recordingMatchingTriple = true;
+                                    recordedTriple.add(nextLine);
+                                    //record this triple and send it to extractor
+                                    writer.write(nextLine);
+                                    writer.newLine();
+                                }
+                            }
+
+                            //only inspect next line for entity match, if it starts with a new triple
+                            if(nextLine.charAt(nextLine.length() - 1) == '.')
+                            {
+                                inspectSubject = true;
+
+                                //check if we reached the end of a triple we have been searching for
+                                if(recordingMatchingTriple)
+                                {
+                                    //update toVisit
+                                    ArrayList<String> newTriples = extractConnectedEntities(recordedTriple);
+                                    for(String s : newTriples)
+                                    {
+                                        if(!toVisit.contains(s))
+                                        {
+                                            toVisit.add(s);
+                                        }
+                                    }
+                                    recordedTriple.clear();
+                                }
+                                recordingMatchingTriple = false;
+                            }
+                            else
+                            {
+                                inspectSubject = false;
+                            }
+                            //System.out.println("inspectSubject = " + inspectSubject + ", ends with: " + nextLine.charAt(nextLine.length() - 1));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+            }
+            writer.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
 
     private static void appendFileToOutput(String directory, String fileName)
@@ -2074,7 +2310,7 @@ public class MainClass implements Runnable {
                     output.close();
                 } catch (Exception e) {
                     e.printStackTrace();
-                    //System.exit(1); //TODO: Add this line again - just removed for development
+                    System.exit(1);
                 }
             }
         }
@@ -2117,7 +2353,7 @@ public class MainClass implements Runnable {
             case "watchers":parseWatchers(this.path);break;
             default: throw new RuntimeException("Unknown file name specified! Which file to parse?!");
         }
-        System.out.println("Finished working on " + this.workOnFile);
+        //System.out.println("Finished working on " + this.workOnFile);
     }
 
     public static void main(String[] args)
@@ -2178,10 +2414,15 @@ public class MainClass implements Runnable {
                         case "head": sampling = 1;break;
                         case "tail": sampling = 2;break;
                         case "random": sampling = 3;break;
-                        case "connected": sampling = 4;mergeOutput=false;break;
-                        case "bfs": sampling = 5;mergeOutput=false;break;
+                        case "connected": sampling = 4;mergeOutput=false;noUserTexts=true;break;
+                        case "bfs": sampling = 5;mergeOutput=false;noUserTexts=true;break;
                         default: sampling = 0; samplingGiven = false;
                         System.out.println("Invalid sampling method. Available methods are head, tail and random. Using no sampling.");
+                    }
+                    if(sampling != 0 && sampling != 3)
+                    {
+                        System.out.println("The selected sampling method is not available via the parser anymore. Head and Tail sampling are done in bash, graph sampling with a different java class.");
+                        System.exit(1);
                     }
                 }
                 else if(s.contains("-percentage=")) //can be used multiple times so we generate multiple samples in one go
@@ -2207,6 +2448,10 @@ public class MainClass implements Runnable {
                 else if(s.toLowerCase().contains("-nomerging"))
                 {
                     mergeOutput = false;
+                }
+                else if(s.toLowerCase().contains("-nostrings"))
+                {
+                    noUserTexts = true;
                 }
                 else
                 {
@@ -2353,6 +2598,10 @@ public class MainClass implements Runnable {
                         }
                     }
                 }
+            }
+            else if(sampling == 4) //not merging output. Probably subgraph sampling
+            {
+                connectedSubgraph(args[0]);
             }
         }
         catch (Exception e) {
